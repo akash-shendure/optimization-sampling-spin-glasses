@@ -1,0 +1,96 @@
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{johd}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{physics}
+
+\title{Computational Phase Transitions: \\ Optimization and Sampling in Spin Glasses \\ \vspace{30pt}
+\Large Statistics 221: Computational Statistics \\
+\Large Project Proposal}
+
+\author{Jerry Zhang, Akash Shendure, Mohammad Khan}
+\date{April 1st, 2026}
+
+\begin{document}
+\maketitle
+
+\section{Project Overview}
+Much of the theory surrounding the optimization and sampling algorithms studied in class assume unimodality and convexity. The rugged energy landscapes of spin glasses are often highly multimodal and can exhibit extreme curvature, which can cause problems for the aforementioned algorithms.
+
+This project studies optimization and sampling in spin systems with varying interaction structure and disorder. We will compare discrete methods on the exact state space $s \in \{-1,+1\}^n$ with continuous methods on $\mathbb{R}^n$ with a relaxation given by the parameterization $s_i \approx \tanh(\alpha x_i)$. The goal is to understand how algorithmic performance changes with temperature, disorder, and interaction topology, and whether these changes resemble a computational phase transition.
+
+The optimization task is to find low energy configurations and near ground states. The sampling task is to estimate expectations under the Boltzmann law
+$$
+\pi_\beta(s) \propto \exp\{-\beta H(s)\}.
+$$
+We will compare methods within each task and then ask whether their performance deteriorates sharply as the system enters critical or glassy regimes.
+
+\section{Models}
+
+We will study four models. The first is the two dimensional ferromagnetic Ising model, which provides a clean baseline with a classical thermal transition. The second is the two dimensional Edwards--Anderson (EA) spin glass, which introduces frustration on a local lattice. The third is a sparse random graph Ising glass, which breaks geometry while retaining finite connectivity. The fourth is the Sherrington--Kirkpatrick (SK) model, which represents the dense mean field limit.
+
+For all discrete models, the Hamiltonian takes the form
+$$
+H(s) = - \sum_{(i,j)\in E} J_{ij} s_i s_j.
+$$
+For the continuous relaxation, we introduce latent continuous variables $\vb{x}=(x_1,\ldots,x_n) \in \mathbb{R}^n$ and define
+$$
+\widetilde H(\vb{x})
+=
+- \sum_{(i,j)\in E} J_{ij}\tanh(\alpha x_i)\tanh(\alpha x_j)
++
+\lambda \sum_{i=1}^n \bigl(1-\tanh^2(\alpha x_i)\bigr).
+$$
+This gives a smooth surrogate on which gradient based samplers and optimizers can be run.
+
+\section{Methods}
+
+For optimization on the discrete space we will use greedy spin descent, simulated annealing, and parallel tempering as a search heuristic. For optimization on the relaxed space we will use gradient descent and Adam on $\widetilde H(\vb{x})$, followed by projection through $\mathrm{sgn}(\tanh(\alpha \vb{x}))$.
+
+For sampling on the discrete space we will use single spin Metropolis, Gibbs or heat bath updates, and parallel tempering. For sampling on the relaxed space we will use Langevin type updates and MALA, with HMC included if time permits. The discrete and continuous methods will be compared only within the same task.
+
+\section{Questions}
+
+\begin{enumerate}
+    \item How do the candidate optimization methods compare in finding low energy states, and how do the candidate sampling methods compare in estimating Boltzmann expectations?
+    \item Do these methods exhibit a phase transition in performance as temperature moves from high temperature into critical or glassy regimes?
+    \item How does the location and severity of this performance transition depend on model class and interaction topology, moving from local lattices to sparse random graphs to dense mean field systems?
+\end{enumerate}
+
+\section{Computing Plan}
+
+\begin{enumerate}
+    \item Generate coupling matrices for the lattice, sparse random graph, and dense SK settings.
+    \item Implement the discrete and continuous algorithms with matched computational budgets.
+    \item Sweep over temperature, system size, and disorder realizations.
+    \item Compute diagnostics for both optimization and sampling.
+\end{enumerate}
+
+For the discrete methods, efficient local energy updates will be used. For the continuous methods, gradients of $\widetilde H(\vb{x})$ will be derived analytically and implemented directly. The experimental design will keep the comparison simple and controlled.
+
+\section{Evaluation}
+
+For optimization, we will report best energy found, projected discrete energy for relaxed methods, success at reaching target thresholds, and variability across random instances.
+
+For sampling, we will estimate mean energy, magnetization in the ferromagnet, and overlap based observables in the glassy models. We will also report autocorrelation times, effective sample size, inter-chain disagreement, acceptance rates, and swap statistics for tempering.
+
+The main empirical object will be a ``difficulty'' curve against temperature. For optimization, difficulty will be measured by failure to reach low energy states under fixed budget. For sampling, difficulty will be measured by mixing and estimation error. If these quantities rise sharply near critical or glassy regimes, this will provide evidence of a computational phase transition.
+
+\section{Deliverables}
+
+The final deliverables will include code for model generation, optimization routines, and sampling algorithms on both the discrete and relaxed spaces. We will also produce a brief report describing the model families, the computational methods, the main diagnostics, and the empirical comparison across temperatures and topologies. The final presentation will focus on whether the observed difficulty transitions are sharp, and whether they appear to be universal across model classes.
+
+\section{References}
+\begin{enumerate}
+    \item S. F. Edwards and P. W. Anderson. Theory of spin glasses. \textit{Journal of Physics F Metal Physics}, 5(5), 965--974, 1975.
+    \item D. Sherrington and S. Kirkpatrick. Solvable model of a spin glass. \textit{Physical Review Letters}, 35(26), 1792--1796, 1975.
+    \item S. Kirkpatrick, C. D. Gelatt Jr., and M. P. Vecchi. Optimization by simulated annealing. \textit{Science}, 220(4598), 671--680, 1983.
+    \item R. H. Swendsen and J. S. Wang. Nonuniversal critical dynamics in Monte Carlo simulations. \textit{Physical Review Letters}, 58(2), 86--88, 1987.
+    \item U. Wolff. Collective Monte Carlo updating for spin systems. \textit{Physical Review Letters}, 62(4), 361--364, 1989.
+    \item K. Hukushima and K. Nemoto. Exchange Monte Carlo method and application to spin glass simulations. \textit{Journal of the Physical Society of Japan}, 65(6), 1604--1608, 1996.
+    \item G. O. Roberts and R. L. Tweedie. Exponential convergence of Langevin distributions and their discrete approximations. \textit{Bernoulli}, 2(4), 341--363, 1996.
+\end{enumerate}
+
+\end{document}
