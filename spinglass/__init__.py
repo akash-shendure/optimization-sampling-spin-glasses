@@ -19,6 +19,15 @@ from .samplers.mala import MALASampler
 from .diagnostics.mcmc_stats import acf, autocov, ess, integrated_autocorr_time, rhat
 from .diagnostics.observables import magnetization, overlap, pairwise_overlaps
 from .diagnostics.summaries import summarize_optimizer_runs, summarize_sampler_runs
+from .experiments.builders import build_algorithm, build_hamiltonian, build_model
+from .experiments.benchmarks import (
+    collect_chain_traces,
+    summarize_optimization_table,
+    summarize_sampling_table,
+)
+from .experiments.grids import merge_dicts, parameter_grid
+from .experiments.io import ensure_dir, save_json, save_npz
+from .experiments.runner import flatten_record, run_grid, run_single
 
 __all__ = [
     "IsingFerromagnet2D",
@@ -47,4 +56,18 @@ __all__ = [
     "pairwise_overlaps",
     "summarize_optimizer_runs",
     "summarize_sampler_runs",
+    "build_algorithm",
+    "build_hamiltonian",
+    "build_model",
+    "collect_chain_traces",
+    "summarize_optimization_table",
+    "summarize_sampling_table",
+    "merge_dicts",
+    "parameter_grid",
+    "ensure_dir",
+    "save_json",
+    "save_npz",
+    "flatten_record",
+    "run_single",
+    "run_grid",
 ]
