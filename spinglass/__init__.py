@@ -28,6 +28,9 @@ from .experiments.benchmarks import (
 from .experiments.grids import merge_dicts, parameter_grid
 from .experiments.io import ensure_dir, save_json, save_npz
 from .experiments.runner import flatten_record, run_grid, run_single
+from .plotting.diagnostics import plot_acf, plot_pair, plot_pair_matrix, plot_rank_histogram, plot_trace
+from .plotting.difficulty import plot_difficulty_curve, plot_grouped_metric
+from .plotting.traceplots import plot_optimizer_trace, plot_sampler_trace
 
 __all__ = [
     "IsingFerromagnet2D",
@@ -70,4 +73,13 @@ __all__ = [
     "flatten_record",
     "run_single",
     "run_grid",
+    "plot_acf",
+    "plot_pair",
+    "plot_pair_matrix",
+    "plot_rank_histogram",
+    "plot_trace",
+    "plot_difficulty_curve",
+    "plot_grouped_metric",
+    "plot_optimizer_trace",
+    "plot_sampler_trace",
 ]
