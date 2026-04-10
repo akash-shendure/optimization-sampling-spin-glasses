@@ -16,6 +16,7 @@ from .samplers.gibbs import GibbsSampler
 from .samplers.parallel_tempering import ParallelTemperingSampler
 from .samplers.langevin import LangevinSampler
 from .samplers.mala import MALASampler
+from .samplers.hmc import HMCSampler
 from .diagnostics.mcmc_stats import acf, autocov, ess, integrated_autocorr_time, rhat
 from .diagnostics.observables import magnetization, overlap, pairwise_overlaps
 from .diagnostics.summaries import summarize_optimizer_runs, summarize_sampler_runs
@@ -24,6 +25,14 @@ from .experiments.benchmarks import (
     collect_chain_traces,
     summarize_optimization_table,
     summarize_sampling_table,
+)
+from .experiments.overlap import (
+    collect_overlap_chain_traces,
+    collect_replica_states,
+    overlap_histogram,
+    replica_overlap_values,
+    summarize_overlap_mixing,
+    summarize_replica_overlaps,
 )
 from .experiments.grids import merge_dicts, parameter_grid
 from .experiments.io import ensure_dir, save_json, save_npz
@@ -49,6 +58,7 @@ __all__ = [
     "ParallelTemperingSampler",
     "LangevinSampler",
     "MALASampler",
+    "HMCSampler",
     "acf",
     "autocov",
     "ess",
@@ -65,6 +75,12 @@ __all__ = [
     "collect_chain_traces",
     "summarize_optimization_table",
     "summarize_sampling_table",
+    "collect_overlap_chain_traces",
+    "collect_replica_states",
+    "overlap_histogram",
+    "replica_overlap_values",
+    "summarize_overlap_mixing",
+    "summarize_replica_overlaps",
     "merge_dicts",
     "parameter_grid",
     "ensure_dir",

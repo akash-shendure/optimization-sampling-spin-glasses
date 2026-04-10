@@ -4,6 +4,7 @@ from .gibbs import GibbsSampler
 from .parallel_tempering import ParallelTemperingSampler
 from .langevin import LangevinSampler
 from .mala import MALASampler
+from .hmc import HMCSampler
 
 __all__ = [
     "MetropolisSampler",
@@ -11,4 +12,5 @@ __all__ = [
     "ParallelTemperingSampler",
     "LangevinSampler",
     "MALASampler",
+    "HMCSampler",
 ]
