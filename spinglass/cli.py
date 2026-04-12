@@ -2,12 +2,10 @@
 # and writes sanitized panels + config to a timestamped run dir
 import argparse
 import sys
-from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 
-from .experiments import ensure_dir, save_json
+from .experiments import make_run_dir, save_json, write_index, write_panel
 from .experiments.studies import (
     canonical_study,
     optimization_beta_sweep,
@@ -54,12 +52,6 @@ def _config_from_args(args):
             out[key] = str(value)
     return out
 
-def _run_dir(base, tag):
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out = Path(base) / f"{ts}_{tag}"
-    ensure_dir(out)
-    return out
-
 # drop non-jsonable fields from grouped summary rows; arrays -> lists
 def _sanitize_summary(grouped):
     out = []
@@ -88,18 +80,22 @@ def _sanitize_table(table):
         out.append(clean)
     return out
 
-def _write_panel(out_dir, name, panel):
-    save_json(out_dir / f"{name}_summary.json", _sanitize_summary(panel["grouped"]))
-    save_json(out_dir / f"{name}_table.json", _sanitize_table(panel["table"]))
-    if panel.get("overlap") is not None:
-        save_json(out_dir / f"{name}_overlap.json", _sanitize_summary(panel["overlap"]))
+# persist a single panel (grouped/table/optional overlap) under out_dir/name
+def _write_panel_to(out_dir, name, panel):
+    write_panel(
+        out_dir,
+        name,
+        grouped=_sanitize_summary(panel["grouped"]),
+        table=_sanitize_table(panel["table"]),
+        overlap=_sanitize_summary(panel["overlap"]) if panel.get("overlap") is not None else None,
+    )
 
 # `beta-sweep` subcommand: runs one (task, space) sweep over the beta list
 def cmd_beta_sweep(args):
     model_class = MODEL_REGISTRY[args.model]
     betas = _parse_float_list(args.betas)
     model_kwargs = _make_model_kwargs(args)
-    out = _run_dir(args.out, f"beta_sweep_{args.task}_{args.space}_{args.model}")
+    out = make_run_dir(args.out, f"beta_sweep_{args.task}_{args.space}_{args.model}")
 
     # dispatch on (task, space); relaxed-optimization reuses the betas list as lrs
     if args.task == "sampling" and args.space == "discrete":
@@ -129,7 +125,7 @@ def cmd_beta_sweep(args):
     else:
         raise SystemExit("unsupported (task, space) combination")
 
-    _write_panel(out, "beta_sweep", panel)
+    _write_panel_to(out, "beta_sweep", panel)
     save_json(out / "config.json", _config_from_args(args))
     print(f"wrote {out}")
     return 0
@@ -140,7 +136,7 @@ def cmd_canonical(args):
     model_class = MODEL_REGISTRY[args.model]
     betas = _parse_float_list(args.betas)
     model_kwargs = _make_model_kwargs(args)
-    out = _run_dir(args.out, f"canonical_{args.model}")
+    out = make_run_dir(args.out, f"canonical_{args.model}")
 
     panels = canonical_study(
         model_class,
@@ -154,9 +150,9 @@ def cmd_canonical(args):
     index = []
     for (space, task), panel in panels.items():
         name = f"{space}_{task}"
-        _write_panel(out, name, panel)
+        _write_panel_to(out, name, panel)
         index.append({"space": space, "task": task, "name": name})
-    save_json(out / "index.json", index)
+    write_index(out, index)
     save_json(out / "config.json", _config_from_args(args))
     print(f"wrote {out}")
     return 0

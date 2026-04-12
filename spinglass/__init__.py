@@ -36,9 +36,23 @@ from .experiments.overlap import (
 )
 from .experiments.grids import merge_dicts, parameter_grid
 from .experiments.io import ensure_dir, save_json, save_npz
+from .experiments.results_dir import (
+    latest_run,
+    list_runs,
+    load_all_panels,
+    load_panel,
+    make_run_dir,
+)
 from .experiments.runner import flatten_record, run_grid, run_single
 from .plotting.diagnostics import plot_acf, plot_pair, plot_pair_matrix, plot_rank_histogram, plot_trace
 from .plotting.difficulty import plot_difficulty_curve, plot_grouped_metric
+from .plotting.overlap import (
+    plot_mean_abs_q_curve,
+    plot_overlap_histogram,
+    plot_overlap_histograms_by_beta,
+    plot_overlap_vs_energy,
+)
+from .plotting.style import set_publication_style
 from .plotting.traceplots import plot_optimizer_trace, plot_sampler_trace
 
 __all__ = [
@@ -89,6 +103,11 @@ __all__ = [
     "flatten_record",
     "run_single",
     "run_grid",
+    "latest_run",
+    "list_runs",
+    "load_all_panels",
+    "load_panel",
+    "make_run_dir",
     "plot_acf",
     "plot_pair",
     "plot_pair_matrix",
@@ -96,6 +115,11 @@ __all__ = [
     "plot_trace",
     "plot_difficulty_curve",
     "plot_grouped_metric",
+    "plot_mean_abs_q_curve",
+    "plot_overlap_histogram",
+    "plot_overlap_histograms_by_beta",
+    "plot_overlap_vs_energy",
     "plot_optimizer_trace",
     "plot_sampler_trace",
+    "set_publication_style",
 ]
