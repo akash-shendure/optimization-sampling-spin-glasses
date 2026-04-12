@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spinglass"
+version = "0.1.0"
+description = "optimization and sampling in spin glasses — Stat 221 course project"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Jerry Zhang" },
+    { name = "Akash Shendure" },
+    { name = "Mohammad Khan" },
+]
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.8",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+spinglass = "spinglass.cli:main"
+
+[tool.setuptools]
+packages = [
+    "spinglass",
+    "spinglass.couplings",
+    "spinglass.models",
+    "spinglass.hamiltonian",
+    "spinglass.optimizers",
+    "spinglass.samplers",
+    "spinglass.diagnostics",
+    "spinglass.experiments",
+    "spinglass.plotting",
+    "spinglass.utils",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
