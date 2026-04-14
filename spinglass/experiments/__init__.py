@@ -1,5 +1,6 @@
 """helpers for running algorithm sweeps and saving results."""
 from .benchmarks import collect_chain_traces, summarize_optimization_table, summarize_sampling_table
+from .budget import Budget, budget_to_n_steps, hamiltonian_evals, steps, sweeps
 from .builders import build_algorithm, build_hamiltonian, build_model
 from .grids import merge_dicts, parameter_grid
 from .io import ensure_dir, save_json, save_npz
@@ -24,6 +25,11 @@ from .results_dir import (
 from .runner import flatten_record, run_grid, run_single
 
 __all__ = [
+    "Budget",
+    "budget_to_n_steps",
+    "hamiltonian_evals",
+    "steps",
+    "sweeps",
     "collect_chain_traces",
     "summarize_optimization_table",
     "summarize_sampling_table",

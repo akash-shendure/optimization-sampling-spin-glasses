@@ -26,6 +26,7 @@ from .experiments.benchmarks import (
     summarize_optimization_table,
     summarize_sampling_table,
 )
+from .experiments.budget import Budget, budget_to_n_steps
 from .experiments.overlap import (
     collect_overlap_chain_traces,
     collect_replica_states,
@@ -86,6 +87,8 @@ __all__ = [
     "build_algorithm",
     "build_hamiltonian",
     "build_model",
+    "Budget",
+    "budget_to_n_steps",
     "collect_chain_traces",
     "summarize_optimization_table",
     "summarize_sampling_table",
