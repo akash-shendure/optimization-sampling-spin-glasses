@@ -3,7 +3,7 @@ import numpy as np
 
 from ..utils.records import append_trace, finalize_trace, init_trace, now
 from ..utils.rng import make_rng
-from ..utils.spin import update_local_fields
+from ..utils.spin import update_local_fields_fast
 
 # always resamples s_i from its full conditional — no reject step
 class GibbsSampler:
@@ -20,6 +20,7 @@ class GibbsSampler:
         s = self.model.random_state(self.rng) if s0 is None else np.asarray(s0, dtype=np.int8).copy()
         h = self.hamiltonian.local_fields(s)
         energy = self.hamiltonian.energy(s)
+        cache = self.hamiltonian.column_cache()
         kept = []
         trace = init_trace()
         start = now()
@@ -50,7 +51,7 @@ class GibbsSampler:
             if s_new != s[i]:
                 dE = self.hamiltonian.delta_energy(s, i, h=h)
                 s[i] = s_new
-                update_local_fields(h, self.hamiltonian.J, i, s[i])
+                update_local_fields_fast(h, cache, i, s[i])
                 energy += float(dE)
 
         # finalize: pack trace and summary stats

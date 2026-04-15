@@ -3,7 +3,7 @@ import numpy as np
 
 from ..utils.records import append_trace, finalize_trace, init_trace, now
 from ..utils.rng import make_rng
-from ..utils.spin import update_local_fields
+from ..utils.spin import update_local_fields_fast
 
 # each replica runs its own MH chain at its beta; swaps shuttle good states up the ladder
 class ParallelTemperingOptimizer:
@@ -28,6 +28,7 @@ class ParallelTemperingOptimizer:
         # per-replica cached fields and energies so each MH step is O(1) excl. update
         fields = np.asarray([self.hamiltonian.local_fields(s) for s in states], dtype=np.float64)
         energies = np.asarray([self.hamiltonian.energy(s) for s in states], dtype=np.float64)
+        cache = self.hamiltonian.column_cache()
         best_idx = int(np.argmin(energies))
         best_energy = float(energies[best_idx])
         best_state = states[best_idx].copy()
@@ -70,7 +71,7 @@ class ParallelTemperingOptimizer:
                 # accept if downhill, else metropolis at this replica's beta
                 if dE <= 0.0 or self.rng.random() < np.exp(-beta * dE):
                     states[r, i] = -states[r, i]
-                    update_local_fields(fields[r], self.hamiltonian.J, i, states[r, i])
+                    update_local_fields_fast(fields[r], cache, i, states[r, i])
                     energies[r] += float(dE)
                     accept_count += 1
                     if energies[r] < best_energy:

@@ -3,7 +3,7 @@ import numpy as np
 
 from ..utils.records import append_trace, finalize_trace, init_trace, now
 from ..utils.rng import make_rng
-from ..utils.spin import update_local_fields
+from ..utils.spin import update_local_fields_fast
 
 # best-improvement (or random-improving) flip on s in {-1,+1}^n; halts at a local min
 class GreedySpinDescent:
@@ -21,6 +21,7 @@ class GreedySpinDescent:
         s = self.model.random_state(self.rng) if s0 is None else np.asarray(s0, dtype=np.int8).copy()
         h = self.hamiltonian.local_fields(s)
         energy = self.hamiltonian.energy(s)
+        cache = self.hamiltonian.column_cache()
         best_energy = energy
         best_state = s.copy()
         hit_step = None
@@ -61,7 +62,8 @@ class GreedySpinDescent:
                 i = int(self.rng.choice(negative))
             energy += float(dE[i])
             s[i] = -s[i]
-            update_local_fields(h, self.hamiltonian.J, i, s[i])
+            # incrementally repair h after flipping site i
+            update_local_fields_fast(h, cache, i, s[i])
             if energy < best_energy:
                 best_energy = energy
                 best_state = s.copy()

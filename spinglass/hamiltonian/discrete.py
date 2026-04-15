@@ -2,12 +2,22 @@
 # exposes energy, local fields, and single/all-site flip deltas
 import numpy as np
 
+from ..utils.spin import ColumnCache
+
 # thin wrapper around a model's coupling matrix J; cached column lookups
 # accelerate sparse single-site updates in metropolis/gibbs
 class DiscreteHamiltonian:
     def __init__(self, model):
         self.model = model
         self.J = model.J
+        self._column_cache = None
+
+    # lazily build the column cache; only sweepers that need per-column
+    # access pay the construction cost
+    def column_cache(self):
+        if self._column_cache is None:
+            self._column_cache = ColumnCache(self.J)
+        return self._column_cache
 
     # total energy E(s) = -1/2 s^T J s; J symmetric with zero diagonal
     def energy(self, s):
