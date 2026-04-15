@@ -1,16 +1,23 @@
 """discrete Hamiltonian H(s) = -sum_{i<j} J_ij s_i s_j on s in {-1,+1}^n."""
 import numpy as np
 
+from ..utils.spin import ColumnCache
 
-# thin wrapper around a SpinModel: all energy math lives here, not on the model
-# keeps model = disorder realization, Hamiltonian = physics operations
+
+# model = disorder realization, Hamiltonian = physics ops
 class DiscreteHamiltonian:
     def __init__(self, model):
         self.model = model
         self.J = model.J  # alias — sparse or dense, both support @
+        self._column_cache = None
 
-    # full energy of a configuration s
-    # H = -sum_{i<j} J_ij s_i s_j = -0.5 s^T J s  (J symmetric, zero diag)
+    # lazy shared cache — O(n*nnz_col) precompute paid once per disorder realization
+    def column_cache(self):
+        if self._column_cache is None:
+            self._column_cache = ColumnCache(self.J)
+        return self._column_cache
+
+    # H = -0.5 s^T J s since J is symmetric with zero diagonal
     def energy(self, s):
         s = np.asarray(s, dtype=np.float64)
         Js = self.J @ s
@@ -21,8 +28,7 @@ class DiscreteHamiltonian:
         s = np.asarray(s, dtype=np.float64)
         return np.asarray(self.J @ s).ravel()
 
-    # energy change from flipping site i: dE = 2 s_i h_i
-    # (flipping i changes -s_i h_i term into +s_i h_i; factor of 2)
+    # dE = 2 s_i h_i (the -s_i h_i term flips to +s_i h_i)
     def delta_energy(self, s, i, h=None):
         if h is None:
             h = self.local_fields(s)

@@ -3,7 +3,7 @@ import numpy as np
 
 from ..utils.records import append_trace, finalize_trace, init_trace, now
 from ..utils.rng import make_rng
-from ..utils.spin import update_local_fields
+from ..utils.spin import update_local_fields_fast
 
 
 class SimulatedAnnealing:
@@ -27,6 +27,7 @@ class SimulatedAnnealing:
         s = self.model.random_state(self.rng) if s0 is None else np.asarray(s0, dtype=np.int8).copy()
         h = self.hamiltonian.local_fields(s)
         energy = self.hamiltonian.energy(s)
+        cache = self.hamiltonian.column_cache()
         best_energy = energy
         best_state = s.copy()
         accept_count = 0
@@ -63,7 +64,7 @@ class SimulatedAnnealing:
             dE = self.hamiltonian.delta_energy(s, i, h=h)
             if dE <= 0.0 or self.rng.random() < np.exp(-beta * dE):
                 s[i] = -s[i]
-                update_local_fields(h, self.hamiltonian.J, i, s[i])
+                update_local_fields_fast(h, cache, i, s[i])
                 energy += float(dE)
                 accept_count += 1
                 if energy < best_energy:
