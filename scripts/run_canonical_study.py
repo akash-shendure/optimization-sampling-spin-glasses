@@ -1,9 +1,11 @@
 """run the canonical four-panel beta sweep from experiments/studies.py.
 
 this is the single end-to-end driver that the proposal's "first benchmark
-study" calls for: a fixed model, a temperature sweep, matched discrete and
-relaxed optimizer and sampler pairs, and benchmark tables dumped to disk for
-downstream plotting. defaults are modest so it runs in a couple of minutes."""
+study" calls for: a fixed model (or named preset), a temperature sweep,
+matched discrete and relaxed optimizer and sampler pairs, and benchmark
+tables dumped to disk for downstream plotting. defaults are modest so the
+default run finishes in a couple of minutes; pass --preset for scaling
+sweeps."""
 import argparse
 import sys
 from pathlib import Path
@@ -14,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from spinglass.cli import cmd_canonical  # noqa: E402
+from spinglass.experiments.presets import list_presets  # noqa: E402
 
 
 def main(argv=None):
@@ -27,7 +30,10 @@ def main(argv=None):
     parser.add_argument("--n-steps", dest="n_steps", type=int, default=2000)
     parser.add_argument("--n-chains", dest="n_chains", type=int, default=4)
     parser.add_argument("--n-restarts", dest="n_restarts", type=int, default=6)
+    parser.add_argument("--n-disorders", dest="n_disorders", type=int, default=1)
     parser.add_argument("--out", default="./results")
+    parser.add_argument("--preset", choices=list_presets(), default=None)
+    parser.add_argument("--list-presets", dest="list_presets", action="store_true")
     args = parser.parse_args(argv)
     return cmd_canonical(args)
 

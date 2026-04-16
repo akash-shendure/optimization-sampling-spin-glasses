@@ -9,6 +9,7 @@ import sys
 import numpy as np
 
 from .experiments import make_run_dir, save_json, write_index, write_panel
+from .experiments.presets import PRESETS, get_preset, list_presets
 from .experiments.studies import (
     canonical_study,
     optimization_beta_sweep,
@@ -136,18 +137,40 @@ def cmd_beta_sweep(args):
 
 
 def cmd_canonical(args):
-    model_class = MODEL_REGISTRY[args.model]
-    betas = _parse_float_list(args.betas)
-    model_kwargs = _make_model_kwargs(args)
-    out = make_run_dir(args.out, f"canonical_{args.model}")
+    if getattr(args, "list_presets", False):
+        for name in list_presets():
+            print(f"  {name:16s} {PRESETS[name]['description']}")
+        return 0
+    if getattr(args, "preset", None):
+        preset = get_preset(args.preset)
+        model_class = preset["model_class"]
+        model_kwargs = preset["model_kwargs"]
+        betas = preset["betas"]
+        n_chains = preset["n_chains"]
+        n_restarts = preset["n_restarts"]
+        n_disorders = preset["n_disorders"]
+        budget = preset["budget"]
+        tag = f"canonical_{args.preset}"
+    else:
+        model_class = MODEL_REGISTRY[args.model]
+        model_kwargs = _make_model_kwargs(args)
+        betas = _parse_float_list(args.betas)
+        n_chains = args.n_chains
+        n_restarts = args.n_restarts
+        n_disorders = args.n_disorders
+        budget = None
+        tag = f"canonical_{args.model}"
+    out = make_run_dir(args.out, tag)
 
     panels = canonical_study(
         model_class,
         model_kwargs,
         betas=betas,
         n_steps=args.n_steps,
-        n_chains=args.n_chains,
-        n_restarts=args.n_restarts,
+        n_chains=n_chains,
+        n_restarts=n_restarts,
+        n_disorders=n_disorders,
+        budget=budget,
     )
     index = []
     for (space, task), panel in panels.items():
@@ -173,6 +196,7 @@ def build_parser():
     common.add_argument("--n-steps", dest="n_steps", type=int, default=2000)
     common.add_argument("--n-chains", dest="n_chains", type=int, default=4)
     common.add_argument("--n-restarts", dest="n_restarts", type=int, default=6)
+    common.add_argument("--n-disorders", dest="n_disorders", type=int, default=1)
     common.add_argument("--out", default="./results")
 
     beta = sub.add_parser("beta-sweep", parents=[common])
@@ -183,6 +207,18 @@ def build_parser():
 
     canon = sub.add_parser("canonical", parents=[common])
     canon.add_argument("--betas", default="0.2,0.5,1.0,2.0")
+    canon.add_argument(
+        "--preset",
+        choices=list_presets(),
+        default=None,
+        help="named scaling-study preset; overrides --model/--betas/--n-chains/etc.",
+    )
+    canon.add_argument(
+        "--list-presets",
+        dest="list_presets",
+        action="store_true",
+        help="list available presets and exit",
+    )
     canon.set_defaults(func=cmd_canonical)
     return parser
 

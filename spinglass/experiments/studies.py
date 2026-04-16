@@ -67,6 +67,20 @@ def _resolve_steps(budget, n_steps, n_spins, space):
     return int(n_steps)
 
 
+def _grouping_keys(model_kwargs, primary_key):
+    """model kwargs with more than one value become part of the grouping key,
+    so sweeps across multiple L / n / c / disorder variants never mix records
+    from different model sizes into the same grouped row."""
+    keys = []
+    for name, value in model_kwargs.items():
+        if name == "seed":
+            continue  # disorder seeds are the thing we AVERAGE over
+        if isinstance(value, (list, tuple)) and len(value) > 1:
+            keys.append(f"model_{name}")
+    keys.append(primary_key)
+    return keys
+
+
 def sampling_beta_sweep(
     model_class,
     model_kwargs,
@@ -122,10 +136,11 @@ def sampling_beta_sweep(
         keep_artifacts=bool(keep_artifacts),
         experiment_name=experiment_name or "sampling_beta_sweep",
     )
+    group_keys = _grouping_keys(model_grid, "algorithm_beta")
     grouped = summarize_sampling_table(
-        results["table"], records=results["records"], group_by=["algorithm_beta"]
+        results["table"], records=results["records"], group_by=group_keys
     )
-    overlaps = summarize_replica_overlaps(results["records"], group_by=["algorithm_beta"])
+    overlaps = summarize_replica_overlaps(results["records"], group_by=group_keys)
     return {
         "records": results["records"],
         "table": results["table"],
@@ -188,7 +203,8 @@ def optimization_beta_sweep(
         if schedule is not None:
             record["meta"]["target_beta"] = float(np.asarray(schedule)[-1])
 
-    grouped = summarize_optimization_table(results["table"], group_by=["target_beta"])
+    group_keys = _grouping_keys(model_grid, "target_beta")
+    grouped = summarize_optimization_table(results["table"], group_by=group_keys)
     return {
         "records": results["records"],
         "table": results["table"],
@@ -281,7 +297,8 @@ def relaxed_optimization_beta_sweep(
         keep_artifacts=False,
         experiment_name=experiment_name or "relaxed_optimization_beta_sweep",
     )
-    grouped = summarize_optimization_table(results["table"], group_by=["algorithm_lr"])
+    group_keys = _grouping_keys(model_grid, "algorithm_lr")
+    grouped = summarize_optimization_table(results["table"], group_by=group_keys)
     return {
         "records": results["records"],
         "table": results["table"],
