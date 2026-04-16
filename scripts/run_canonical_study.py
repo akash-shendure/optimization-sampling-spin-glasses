@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from spinglass.cli import cmd_canonical
+from spinglass.experiments.presets import list_presets
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="run the canonical spinglass benchmark study")
@@ -19,7 +20,10 @@ def main(argv=None):
     parser.add_argument("--n-steps", dest="n_steps", type=int, default=2000)
     parser.add_argument("--n-chains", dest="n_chains", type=int, default=4)
     parser.add_argument("--n-restarts", dest="n_restarts", type=int, default=6)
+    parser.add_argument("--n-disorders", dest="n_disorders", type=int, default=1)
     parser.add_argument("--out", default="./results")
+    parser.add_argument("--preset", choices=list_presets(), default=None)
+    parser.add_argument("--list-presets", dest="list_presets", action="store_true")
     args = parser.parse_args(argv)
     return cmd_canonical(args)
 

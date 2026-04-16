@@ -4,6 +4,7 @@ from .budget import Budget, budget_to_n_steps, hamiltonian_evals, steps, sweeps
 from .builders import build_algorithm, build_hamiltonian, build_model
 from .grids import merge_dicts, parameter_grid
 from .io import ensure_dir, save_json, save_npz
+from .presets import PRESETS, get_preset, list_presets
 from .overlap import (
     collect_overlap_chain_traces,
     collect_replica_states,
@@ -30,6 +31,9 @@ __all__ = [
     "hamiltonian_evals",
     "steps",
     "sweeps",
+    "PRESETS",
+    "get_preset",
+    "list_presets",
     "collect_chain_traces",
     "summarize_optimization_table",
     "summarize_sampling_table",

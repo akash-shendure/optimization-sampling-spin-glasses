@@ -44,6 +44,18 @@ def _resolve_steps(budget, n_steps, n_spins, space):
         return int(budget_to_n_steps(budget, n_spins, space))
     return int(n_steps)
 
+# build group-by keys: include any model kwarg that varies + the primary axis
+def _grouping_keys(model_kwargs, primary_key):
+    keys = []
+    for name, value in model_kwargs.items():
+        if name == "seed":
+            continue
+        # only include axes that actually sweep (len>1); fixed kwargs are uniform
+        if isinstance(value, (list, tuple)) and len(value) > 1:
+            keys.append(f"model_{name}")
+    keys.append(primary_key)
+    return keys
+
 # discrete-space sampling sweep over beta — returns records + summary + overlaps
 def sampling_beta_sweep(
     model_class,
@@ -98,10 +110,12 @@ def sampling_beta_sweep(
         keep_artifacts=bool(keep_artifacts),
         experiment_name=experiment_name or "sampling_beta_sweep",
     )
+    # group by the varying model axes plus the algorithm beta column
+    group_keys = _grouping_keys(model_grid, "algorithm_beta")
     grouped = summarize_sampling_table(
-        results["table"], records=results["records"], group_by=["algorithm_beta"]
+        results["table"], records=results["records"], group_by=group_keys
     )
-    overlaps = summarize_replica_overlaps(results["records"], group_by=["algorithm_beta"])
+    overlaps = summarize_replica_overlaps(results["records"], group_by=group_keys)
     return {
         "records": results["records"],
         "table": results["table"],
@@ -165,7 +179,8 @@ def optimization_beta_sweep(
         if schedule is not None:
             record["meta"]["target_beta"] = float(np.asarray(schedule)[-1])
 
-    grouped = summarize_optimization_table(results["table"], group_by=["target_beta"])
+    group_keys = _grouping_keys(model_grid, "target_beta")
+    grouped = summarize_optimization_table(results["table"], group_by=group_keys)
     return {
         "records": results["records"],
         "table": results["table"],
@@ -252,7 +267,8 @@ def relaxed_optimization_beta_sweep(
         keep_artifacts=False,
         experiment_name=experiment_name or "relaxed_optimization_beta_sweep",
     )
-    grouped = summarize_optimization_table(results["table"], group_by=["algorithm_lr"])
+    group_keys = _grouping_keys(model_grid, "algorithm_lr")
+    grouped = summarize_optimization_table(results["table"], group_by=group_keys)
     return {
         "records": results["records"],
         "table": results["table"],
