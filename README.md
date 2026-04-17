@@ -1,267 +1,109 @@
 # Optimization and Sampling in Spin Glasses
 
-Research code for a Statistics 221 project on optimization and sampling in rugged spin-system energy landscapes. The central question is whether algorithmic performance exhibits a computational phase transition as temperature, disorder, and interaction topology change.
+Statistics 221 project on whether optimization and sampling algorithms exhibit a computational phase transition as spin-system landscapes move from clean to critical to glassy. We compare discrete methods on `s in {-1, +1}^n` against relaxed continuous methods on `x in R^n` using `tanh(alpha x)` as a surrogate, on four model families:
 
-We compare:
-- discrete methods on `s in {-1, +1}^n`
-- relaxed continuous methods on `x in R^n` using `tanh(alpha x)` as a surrogate spin representation
+- `IsingFerromagnet2D` — clean lattice baseline with classical ordering
+- `EdwardsAnderson2D` — frustrated 2D lattice glass
+- `SparseRandomGlass` — sparse Erdos-Renyi interaction graph
+- `SherringtonKirkpatrick` — dense mean-field SK
 
-The repository currently includes:
-- model and coupling builders
-- discrete and relaxed Hamiltonians
-- optimization algorithms
-- sampling algorithms
-- experiment runners
-- benchmark summaries
-- plotting utilities
+The central empirical object is a difficulty curve (best energy, sampling mixing error) against inverse temperature `beta`, swept across model families and system sizes.
 
-## Overview
+## Install
 
-We study four model families with increasing structural complexity:
-- `IsingFerromagnet2D`: clean lattice baseline with classical ordering
-- `EdwardsAnderson2D`: frustrated 2D lattice glass
-- `SparseRandomGlass`: sparse Erdos-Renyi interaction graph
-- `SherringtonKirkpatrick`: dense mean-field SK model
-
-The main empirical goal is to compare how optimization and sampling difficulty changes with:
-- inverse temperature `beta`
-- system size
-- disorder realization
-- interaction topology
-
-For optimization, the key outcomes are things like:
-- best energy found under fixed budget
-- projected discrete energy for relaxed methods
-- success rate or time-to-threshold
-
-For sampling, the key outcomes are things like:
-- mean energy
-- magnetization in ferromagnetic models
-- overlap-based observables in glassy models
-- ESS, `R-hat`, autocorrelation, acceptance, and swap statistics
-
-The package is designed so algorithms do not just return a final answer; they also return traces and metadata suitable for benchmarking and diagnostics.
-
-## Repository Layout
-
-```text
-spinglass/
-  models/        model containers for topology + disorder realization
-  couplings/     low-level builders for coupling matrices J
-  hamiltonian/   energy, local field, gradient, and projection logic
-  optimizers/    discrete and relaxed optimization algorithms
-  samplers/      discrete and relaxed sampling algorithms
-  diagnostics/   ESS, R-hat, ACF, overlap, and summary helpers
-  experiments/   single-run and sweep runners, grouped benchmark summaries
-  plotting/      matplotlib helpers for traces, diagnostics, difficulty curves
-  utils/         RNG helpers and shared trace / spin update utilities
+```bash
+pip install -e .
 ```
 
-The main design convention is:
-- a `model` stores topology, disorder, and metadata
-- a `Hamiltonian` performs the physics/math on top of that model
-- algorithms operate on a Hamiltonian
-- experiments run algorithms repeatedly and collect analysis-ready summaries
+Requires `numpy`, `scipy`, `matplotlib`. Pytest is optional — the zero-dependency test runner works standalone.
 
-## Core Conventions and Assumptions
-
-- The discrete Hamiltonian is
-  `H(s) = -0.5 * s^T J s`
-  with symmetric zero-diagonal `J`.
-- Discrete states are `int8` arrays in `{-1, +1}`.
-- Relaxed methods use `t = tanh(alpha x)` and the surrogate energy implemented in `RelaxedHamiltonian`.
-- `J` may be sparse CSR or dense `ndarray`; downstream code should prefer `J @ v`.
-- Models are lightweight and stateless apart from stored RNG/disorder information.
-- Hamiltonians are also stateless wrappers; samplers are responsible for maintaining local fields incrementally when needed.
-- Relaxed methods can optionally project back to discrete space via `RelaxedHamiltonian.project(x)`.
-
-Important implementation detail:
-- discrete single-spin methods rely on `delta_energy` and incremental updates of `h = J @ s` for efficiency
-
-## Dependencies
-
-There is not yet a formal `requirements.txt` or `pyproject.toml`. The current code uses:
-- `numpy`
-- `scipy`
-- `matplotlib` for plotting helpers
-
-You should make sure those packages are available in your environment before running experiments.
-
-## Usage
-
-### Build a model and Hamiltonians
+## Quickstart
 
 ```python
-from spinglass import (
-    EdwardsAnderson2D,
-    DiscreteHamiltonian,
-    RelaxedHamiltonian,
-)
+from spinglass import EdwardsAnderson2D, DiscreteHamiltonian, SimulatedAnnealing
+import numpy as np
 
 model = EdwardsAnderson2D(L=16, disorder="pm1", seed=0)
 Hd = DiscreteHamiltonian(model)
-Hr = RelaxedHamiltonian(model, alpha=1.0, lam=0.1)
-```
-
-### Run an optimizer
-
-```python
-import numpy as np
-from spinglass import SimulatedAnnealing
-
-opt = SimulatedAnnealing(
-    Hd,
-    beta_schedule=np.linspace(0.1, 2.0, 5000),
-    seed=0,
-)
-result = opt.run(n_steps=5000, trace_every=50)
-
+result = SimulatedAnnealing(Hd, beta_schedule=np.linspace(0.1, 2.0, 5000), seed=0).run(n_steps=5000)
 print(result["summary"]["best_energy"])
 ```
 
-### Run a sampler
+Every optimizer and sampler returns the same shape:
 
 ```python
-from spinglass import MetropolisSampler
-
-sampler = MetropolisSampler(Hd, beta=0.8, seed=0)
-result = sampler.run(
-    n_steps=10000,
-    burn_in=2000,
-    thin=10,
-    trace_every=100,
-    store_samples=True,
-)
-
-print(result["summary"]["acceptance_rate"])
+{"summary": {...},      # scalar metrics: final/best energy, acceptance, runtime
+ "trace":   {...},      # downsampled 1d arrays: step, energy, grad_norm, ...
+ "artifacts": {...}}    # final_state, best_state, optional samples
 ```
 
-### Run a sweep with the experiment layer
+## Command-line interface
 
-```python
-import numpy as np
-from spinglass import (
-    EdwardsAnderson2D,
-    SimulatedAnnealing,
-    run_grid,
-    summarize_optimization_table,
-)
+Named presets drive the canonical scaling studies end-to-end:
 
-results = run_grid(
-    task="optimization",
-    space="discrete",
-    model_class=EdwardsAnderson2D,
-    model_grid={"L": [8], "seed": [0, 1, 2]},
-    algorithm_class=SimulatedAnnealing,
-    algorithm_grid={"beta_schedule": [np.linspace(0.1, 2.0, 2000)], "seed": [0]},
-    run_kwargs={"n_steps": 2000, "trace_every": 50},
-    n_restarts=3,
-    keep_trace=False,
-    experiment_name="ea_sa_demo",
-)
-
-table = results["table"]
-summary_rows = summarize_optimization_table(table, group_by=["model_seed"])
+```bash
+python -m spinglass canonical --list-presets
+python -m spinglass canonical --preset ferro_scaling --out ./results
+python -m spinglass canonical --preset ea_scaling
+python -m spinglass canonical --preset er_glass
+python -m spinglass canonical --preset sk
 ```
 
-### Make a diagnostic or difficulty plot
+Each preset sweeps `beta`, averages over independent disorder realizations, and writes a timestamped run directory with one JSON per panel (`discrete_sampling`, `discrete_optimization`, `relaxed_sampling`, `relaxed_optimization`) plus per-condition overlap summaries. For one-off sweeps use `python -m spinglass beta-sweep --task sampling --model ea2d --L 8 --betas 0.3,0.8,1.5`.
 
-```python
-from spinglass import plot_difficulty_curve
+## Implemented methods
 
-fig, ax = plot_difficulty_curve(
-    summary_rows,
-    beta_key="algorithm_beta",
-    metric="mean_best_energy",
-)
+**Discrete** — `GreedySpinDescent`, `SimulatedAnnealing`, `ParallelTemperingOptimizer`, `MetropolisSampler`, `GibbsSampler`, `ParallelTemperingSampler`.
+
+**Relaxed** — `GradientDescentOptimizer`, `AdamOptimizer`, `LangevinSampler`, `MALASampler`, `HMCSampler`.
+
+All discrete single-spin methods route through a cached local-field update (`DiscreteHamiltonian.column_cache()`) so the hot loop is O(k_i) per accepted flip on sparse models, not O(n).
+
+## Experiments and diagnostics
+
+- `run_single` / `run_grid` — single-run and sweep execution with flat metadata
+- `summarize_optimization_table` / `summarize_sampling_table` — grouped benchmark rows
+- `Budget(kind="sweeps", value=150)` + friends — matched-compute convention for fair discrete-vs-relaxed comparisons
+- `sampling_beta_sweep`, `optimization_beta_sweep`, `canonical_study` (in `spinglass.experiments.studies`) — reusable study functions that back the CLI presets and accept `n_disorders` for instance averaging
+
+Diagnostics: `acf`, `ess`, `rhat`, `integrated_autocorr_time`, `magnetization`, `overlap`, `pairwise_overlaps`, plus glassy helpers (`summarize_replica_overlaps`, `overlap_histogram`, `summarize_overlap_mixing`).
+
+Plotting: trace / ACF / rank-histogram / pair / pair-matrix diagnostics, difficulty and grouped-metric plots, and overlap plots (`plot_overlap_histogram`, `plot_mean_abs_q_curve`, `plot_overlap_histograms_by_beta`, `plot_overlap_vs_energy`). Call `set_publication_style()` once at the top of a notebook for publication defaults.
+
+## Repository layout
+
+```text
+spinglass/
+  models/        model containers (disorder + topology)
+  couplings/     coupling matrix builders
+  hamiltonian/   DiscreteHamiltonian, RelaxedHamiltonian
+  optimizers/    one file per algorithm
+  samplers/      one file per algorithm
+  diagnostics/   observables, MCMC stats, run summaries
+  experiments/   builders, grids, runner, budget, studies, presets, benchmarks,
+                 overlap, results_dir, io
+  plotting/      style, traceplots, diagnostics, difficulty, overlap
+  utils/         rng, records, spin (ColumnCache + incremental updates)
+  cli.py         `python -m spinglass ...` entrypoint
+tests/           51 unit tests + zero-dependency runner
+scripts/         thin drivers for the canonical study
 ```
 
-## Implemented Methods
+Design split: a **model** holds disorder and topology; a **Hamiltonian** performs the physics; **algorithms** operate on a Hamiltonian; **experiments** run algorithms repeatedly and collect analysis-ready summaries.
 
-### Optimizers
+## Testing
 
-Discrete:
-- `GreedySpinDescent`
-- `SimulatedAnnealing`
-- `ParallelTemperingOptimizer`
-
-Relaxed:
-- `GradientDescentOptimizer`
-- `AdamOptimizer`
-
-### Samplers
-
-Discrete:
-- `MetropolisSampler`
-- `GibbsSampler`
-- `ParallelTemperingSampler`
-
-Relaxed:
-- `LangevinSampler`
-- `MALASampler`
-
-Each algorithm exposes a lightweight constructor and a `run(...)` method.
-
-## Return Format
-
-All optimizer and sampler `run(...)` methods return a dict with the shared shape:
-
-```python
-{
-    "summary": {...},
-    "trace": {...},
-    "artifacts": {...},
-}
+```bash
+python -m tests.run_all     # zero-dep runner — always works
+pytest tests/               # if pytest is installed
 ```
 
-Typical contents:
-- `summary`: scalar metrics like runtime, final energy, best energy, acceptance rate
-- `trace`: downsampled curves like `step`, `time_sec`, `energy`, `best_energy`, `grad_norm`
-- `artifacts`: heavier outputs like final state, best state, or stored samples
+51 tests cover energy vs brute force, incremental local-field updates, analytic gradient vs finite differences, PT swap bookkeeping, ESS / R-hat / tau_int on iid + AR(1) chains, Budget resolution, disorder fan-out, ColumnCache correctness plus speedup, and the preset registry.
 
-This common format is what the experiment and plotting layers build on.
+## Core conventions
 
-## Experiment Workflow
-
-The intended workflow is:
-
-1. choose a model family and parameter grid
-2. choose an algorithm and hyperparameter grid
-3. run `run_single(...)` for one job or `run_grid(...)` for a sweep
-4. inspect `results["table"]` for per-run summaries
-5. use `summarize_optimization_table(...)` or `summarize_sampling_table(...)` for grouped benchmark summaries
-6. use the plotting helpers for trace diagnostics and difficulty curves
-
-Useful experiment functions:
-- `run_single(...)`
-- `run_grid(...)`
-- `flatten_record(...)`
-- `parameter_grid(...)`
-- `summarize_optimization_table(...)`
-- `summarize_sampling_table(...)`
-
-## Diagnostics and Plotting
-
-Implemented diagnostics include:
-- autocovariance / ACF
-- ESS
-- split `R-hat`
-- integrated autocorrelation time
-- magnetization
-- overlap and pairwise overlaps
-
-Implemented plotting helpers include:
-- optimizer trace plots
-- sampler trace plots
-- generic trace plots
-- ACF plots
-- rank histograms
-- pair plots and pair matrices
-- grouped metric plots
-- difficulty curves
-
-## Notes
-
-- The code is organized around a model / Hamiltonian / algorithm separation.
-- Most public functionality is re-exported from `spinglass/__init__.py`.
-- New methods should ideally preserve the current `summary` / `trace` / `artifacts` output pattern so they work naturally with the experiment and plotting layers.
+- `H(s) = -0.5 * s^T J s`, `J` symmetric with zero diagonal, sparse CSR or dense ndarray (use `J @ v` for both).
+- Discrete states are `int8` in {-1, +1}; cast to float64 before matvecs.
+- Relaxed surrogate is `t = tanh(alpha x)` with optional `lam` penalty; `RelaxedHamiltonian.project(x)` maps back to discrete via `sign(.)`.
+- Samplers maintain `h = J @ s` incrementally through the column cache; don't recompute it in a hot loop.
+- Preserve the `summary` / `trace` / `artifacts` return shape when adding new algorithms so the experiment and plotting layers work unchanged.
