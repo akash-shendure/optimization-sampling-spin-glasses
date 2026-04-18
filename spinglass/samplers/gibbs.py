@@ -7,12 +7,11 @@ from ..utils.spin import update_local_fields_fast
 
 
 class GibbsSampler:
-    def __init__(self, hamiltonian, beta, seed=None):
+    def __init__(self, hamiltonian, beta):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def run(self, s0=None, n_steps=1000, burn_in=0, thin=1, trace_every=1, store_samples=False):
         s = self.model.random_state(self.rng) if s0 is None else np.asarray(s0, dtype=np.int8).copy()
@@ -59,7 +58,6 @@ class GibbsSampler:
             "final_energy": float(energy),
             "mean_energy": float(np.mean(trace_out["energy"])),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": s}
         if store_samples:

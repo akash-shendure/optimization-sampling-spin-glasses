@@ -16,10 +16,10 @@ from spinglass import (
 
 
 def test_pt_optimizer_final_energies_match_states():
-    model = EdwardsAnderson2D(L=6, disorder="pm1", seed=42)
+    model = EdwardsAnderson2D(L=6, disorder="pm1")
     H = DiscreteHamiltonian(model)
     betas = np.array([0.2, 0.5, 1.0, 2.0])
-    pt = ParallelTemperingOptimizer(H, betas=betas, swap_interval=5, seed=1)
+    pt = ParallelTemperingOptimizer(H, betas=betas, swap_interval=5)
     result = pt.run(n_steps=300, trace_every=50)
     states = result["artifacts"]["final_states"]
     cached = result["artifacts"]["energies"]
@@ -30,9 +30,9 @@ def test_pt_optimizer_final_energies_match_states():
 
 
 def test_pt_optimizer_best_state_has_best_energy():
-    model = EdwardsAnderson2D(L=5, disorder="pm1", seed=7)
+    model = EdwardsAnderson2D(L=5, disorder="pm1")
     H = DiscreteHamiltonian(model)
-    pt = ParallelTemperingOptimizer(H, betas=[0.2, 1.0, 5.0], seed=2)
+    pt = ParallelTemperingOptimizer(H, betas=[0.2, 1.0, 5.0])
     result = pt.run(n_steps=500, trace_every=50)
     best_state = result["artifacts"]["best_state"]
     best_energy = float(result["summary"]["best_energy"])
@@ -42,9 +42,9 @@ def test_pt_optimizer_best_state_has_best_energy():
 
 
 def test_pt_sampler_final_state_matches_summary_energy():
-    model = EdwardsAnderson2D(L=5, disorder="pm1", seed=8)
+    model = EdwardsAnderson2D(L=5, disorder="pm1")
     H = DiscreteHamiltonian(model)
-    pt = ParallelTemperingSampler(H, betas=[0.5, 1.0, 2.0], swap_interval=3, seed=9)
+    pt = ParallelTemperingSampler(H, betas=[0.5, 1.0, 2.0], swap_interval=3)
     result = pt.run(n_steps=400, burn_in=50, trace_every=25)
     states = result["artifacts"]["final_states"]
     target_state = result["artifacts"]["target_state"]
@@ -60,18 +60,18 @@ def test_pt_sampler_final_state_matches_summary_energy():
 
 
 def test_pt_swap_acceptance_rate_in_zero_one():
-    model = EdwardsAnderson2D(L=5, seed=11)
+    model = EdwardsAnderson2D(L=5)
     H = DiscreteHamiltonian(model)
-    pt = ParallelTemperingOptimizer(H, betas=[0.5, 1.0, 2.0, 4.0], swap_interval=2, seed=12)
+    pt = ParallelTemperingOptimizer(H, betas=[0.5, 1.0, 2.0, 4.0], swap_interval=2)
     result = pt.run(n_steps=200, trace_every=50)
     rate = result["summary"]["swap_acceptance_rate"]
     assert 0.0 <= rate <= 1.0
 
 
 def test_pt_optimizer_trace_is_monotone_in_best():
-    model = EdwardsAnderson2D(L=5, seed=13)
+    model = EdwardsAnderson2D(L=5)
     H = DiscreteHamiltonian(model)
-    pt = ParallelTemperingOptimizer(H, betas=[0.3, 1.0, 3.0], seed=14)
+    pt = ParallelTemperingOptimizer(H, betas=[0.3, 1.0, 3.0])
     result = pt.run(n_steps=500, trace_every=25)
     best = result["trace"]["best_energy"]
     assert np.all(np.diff(best) <= 1e-12), "best energy must be monotone non-increasing"

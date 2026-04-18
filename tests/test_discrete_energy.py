@@ -35,16 +35,16 @@ def _assert_close(a, b, atol=1e-10, what=""):
 
 def _sample_models():
     return [
-        IsingFerromagnet2D(L=5, seed=0),
-        EdwardsAnderson2D(L=5, disorder="pm1", seed=1),
-        EdwardsAnderson2D(L=4, disorder="gaussian", seed=2),
-        SparseRandomGlass(n=24, c=3.0, seed=3),
-        SherringtonKirkpatrick(n=20, seed=4),
+        IsingFerromagnet2D(L=5),
+        EdwardsAnderson2D(L=5, disorder="pm1"),
+        EdwardsAnderson2D(L=4, disorder="gaussian"),
+        SparseRandomGlass(n=24, c=3.0),
+        SherringtonKirkpatrick(n=20),
     ]
 
 
 def test_energy_matches_brute_force():
-    rng = np.random.default_rng(10)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         for _ in range(3):
@@ -53,7 +53,7 @@ def test_energy_matches_brute_force():
 
 
 def test_local_fields_match_matvec():
-    rng = np.random.default_rng(11)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         s = 2 * rng.integers(0, 2, size=model.n).astype(np.int8) - 1
@@ -64,7 +64,7 @@ def test_local_fields_match_matvec():
 
 
 def test_delta_energy_matches_fresh_recompute():
-    rng = np.random.default_rng(12)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         s = 2 * rng.integers(0, 2, size=model.n).astype(np.int8) - 1
@@ -80,7 +80,7 @@ def test_delta_energy_matches_fresh_recompute():
 
 
 def test_delta_energy_all_matches_loop():
-    rng = np.random.default_rng(13)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         s = 2 * rng.integers(0, 2, size=model.n).astype(np.int8) - 1

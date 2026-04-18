@@ -37,11 +37,11 @@ def _parse_float_list(text):
 
 def _make_model_kwargs(args):
     if args.model in ("ising2d", "ea2d"):
-        return {"L": [int(args.L)], "seed": [int(args.seed)]}
+        return {"L": [int(args.L)]}
     if args.model == "sparse_glass":
-        return {"n": [int(args.n)], "c": [float(args.c)], "seed": [int(args.seed)]}
+        return {"n": [int(args.n)], "c": [float(args.c)]}
     if args.model == "sk":
-        return {"n": [int(args.n)], "seed": [int(args.seed)]}
+        return {"n": [int(args.n)]}
     raise ValueError(f"unknown model {args.model}")
 
 
@@ -192,7 +192,6 @@ def build_parser():
     common.add_argument("--L", type=int, default=8)
     common.add_argument("--n", type=int, default=64)
     common.add_argument("--c", type=float, default=3.0)
-    common.add_argument("--seed", type=int, default=0)
     common.add_argument("--n-steps", dest="n_steps", type=int, default=2000)
     common.add_argument("--n-chains", dest="n_chains", type=int, default=4)
     common.add_argument("--n-restarts", dest="n_restarts", type=int, default=6)

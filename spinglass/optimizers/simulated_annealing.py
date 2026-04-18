@@ -7,12 +7,11 @@ from ..utils.spin import update_local_fields_fast
 
 
 class SimulatedAnnealing:
-    def __init__(self, hamiltonian, beta_schedule, seed=None):
+    def __init__(self, hamiltonian, beta_schedule):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta_schedule = beta_schedule
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def _beta(self, step, n_steps):
         if callable(self.beta_schedule):
@@ -83,7 +82,6 @@ class SimulatedAnnealing:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_state": s, "best_state": best_state}
         if store_states:

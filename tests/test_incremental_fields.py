@@ -10,9 +10,9 @@ from spinglass import DiscreteHamiltonian, EdwardsAnderson2D, SherringtonKirkpat
 from spinglass.utils.spin import spin_column, update_local_fields
 
 
-def _simulate_flips(model, n_flips, seed):
+def _simulate_flips(model, n_flips):
     H = DiscreteHamiltonian(model)
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng()
     s = model.random_state(rng).copy()
     h = H.local_fields(s).copy()
     for _ in range(n_flips):
@@ -23,26 +23,26 @@ def _simulate_flips(model, n_flips, seed):
 
 
 def test_incremental_fields_match_fresh_recompute_sparse():
-    model = EdwardsAnderson2D(L=6, disorder="pm1", seed=100)
-    s, h_inc, h_fresh = _simulate_flips(model, n_flips=50, seed=200)
+    model = EdwardsAnderson2D(L=6, disorder="pm1")
+    s, h_inc, h_fresh = _simulate_flips(model, n_flips=50)
     assert np.allclose(h_inc, h_fresh, atol=1e-10)
 
 
 def test_incremental_fields_match_fresh_recompute_er():
-    model = SparseRandomGlass(n=40, c=4.0, seed=101)
-    s, h_inc, h_fresh = _simulate_flips(model, n_flips=80, seed=201)
+    model = SparseRandomGlass(n=40, c=4.0)
+    s, h_inc, h_fresh = _simulate_flips(model, n_flips=80)
     assert np.allclose(h_inc, h_fresh, atol=1e-9)
 
 
 def test_incremental_fields_match_fresh_recompute_sk():
-    model = SherringtonKirkpatrick(n=30, seed=102)
-    s, h_inc, h_fresh = _simulate_flips(model, n_flips=100, seed=202)
+    model = SherringtonKirkpatrick(n=30)
+    s, h_inc, h_fresh = _simulate_flips(model, n_flips=100)
     assert np.allclose(h_inc, h_fresh, atol=1e-9)
 
 
 def test_spin_column_matches_dense_column():
-    rng = np.random.default_rng(300)
-    for model in (EdwardsAnderson2D(L=4, seed=1), SherringtonKirkpatrick(n=16, seed=2)):
+    rng = np.random.default_rng()
+    for model in (EdwardsAnderson2D(L=4), SherringtonKirkpatrick(n=16)):
         J_dense = model.J.toarray() if hasattr(model.J, "toarray") else np.asarray(model.J)
         for _ in range(3):
             i = int(rng.integers(model.n))
@@ -53,9 +53,9 @@ def test_spin_column_matches_dense_column():
 
 def test_flip_twice_restores_local_fields():
     # flipping the same site twice should leave h unchanged — direct consistency check
-    model = EdwardsAnderson2D(L=5, seed=5)
+    model = EdwardsAnderson2D(L=5)
     H = DiscreteHamiltonian(model)
-    rng = np.random.default_rng(6)
+    rng = np.random.default_rng()
     s = model.random_state(rng).copy()
     h0 = H.local_fields(s).copy()
     for i in (0, 3, 7, 11):

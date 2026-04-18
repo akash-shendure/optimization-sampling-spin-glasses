@@ -25,15 +25,15 @@ from spinglass.utils.spin import (
 
 def _models():
     return [
-        IsingFerromagnet2D(L=5, seed=0),
-        EdwardsAnderson2D(L=6, disorder="pm1", seed=1),
-        SparseRandomGlass(n=32, c=3.0, seed=2),
-        SherringtonKirkpatrick(n=20, seed=3),
+        IsingFerromagnet2D(L=5),
+        EdwardsAnderson2D(L=6, disorder="pm1"),
+        SparseRandomGlass(n=32, c=3.0),
+        SherringtonKirkpatrick(n=20),
     ]
 
 
 def test_column_cache_matches_legacy_on_single_flip():
-    rng = np.random.default_rng(10)
+    rng = np.random.default_rng()
     for model in _models():
         H = DiscreteHamiltonian(model)
         cache = ColumnCache(H.J)
@@ -49,7 +49,7 @@ def test_column_cache_matches_legacy_on_single_flip():
 
 
 def test_column_cache_matches_fresh_recompute():
-    rng = np.random.default_rng(11)
+    rng = np.random.default_rng()
     for model in _models():
         H = DiscreteHamiltonian(model)
         cache = ColumnCache(H.J)
@@ -75,7 +75,7 @@ def test_column_cache_empty_column_is_noop():
 
 
 def test_hamiltonian_column_cache_is_cached_and_shared():
-    model = EdwardsAnderson2D(L=4, seed=4)
+    model = EdwardsAnderson2D(L=4)
     H = DiscreteHamiltonian(model)
     c1 = H.column_cache()
     c2 = H.column_cache()
@@ -84,13 +84,14 @@ def test_hamiltonian_column_cache_is_cached_and_shared():
 
 def test_column_cache_speedup_on_sparse_model():
     # build something big enough for the timing gap to be visible
-    model = EdwardsAnderson2D(L=20, disorder="pm1", seed=5)
+    model = EdwardsAnderson2D(L=20, disorder="pm1")
     H = DiscreteHamiltonian(model)
     cache = ColumnCache(H.J)
-    rng = np.random.default_rng(6)
-    s = model.random_state(rng).copy()
+    rng = np.random.default_rng()
+    s0 = model.random_state(rng).copy()
     flips = rng.integers(0, model.n, size=1500)
 
+    s = s0.copy()
     h_legacy = H.local_fields(s).copy()
     t0 = time.perf_counter()
     for idx in flips:
@@ -100,7 +101,7 @@ def test_column_cache_speedup_on_sparse_model():
     legacy_t = time.perf_counter() - t0
 
     # reset s back to the starting config so both runs do identical work
-    s = model.random_state(np.random.default_rng(6)).copy()
+    s = s0.copy()
     h_fast = H.local_fields(s).copy()
     t0 = time.perf_counter()
     for idx in flips:
@@ -116,11 +117,11 @@ def test_column_cache_speedup_on_sparse_model():
 
 def test_dense_model_cache_also_correct():
     # SK has dense J — the cache should still give correct results (same as legacy)
-    model = SherringtonKirkpatrick(n=24, seed=7)
+    model = SherringtonKirkpatrick(n=24)
     H = DiscreteHamiltonian(model)
     cache = H.column_cache()
     assert not cache.sparse
-    rng = np.random.default_rng(8)
+    rng = np.random.default_rng()
     s = model.random_state(rng).copy()
     h = H.local_fields(s).copy()
     for _ in range(40):

@@ -21,11 +21,14 @@ def run_single(
     experiment_name=None,
     chain_id=None,
     restart_id=None,
-    disorder_seed=None,
+    disorder_id=None,
 ):
     model_kwargs = deepcopy(model_kwargs)
     algorithm_kwargs = deepcopy(algorithm_kwargs)
     run_kwargs = deepcopy(run_kwargs)
+
+    # _disorder_id is a grid-fanout marker, not a model constructor kwarg
+    model_kwargs.pop("_disorder_id", None)
 
     model = build_model(model_class, **model_kwargs)
     hamiltonian = build_hamiltonian(model, space=space, alpha=alpha, lam=lam)
@@ -46,9 +49,7 @@ def run_single(
         "algorithm_name": algorithm_class.__name__,
         "chain_id": chain_id,
         "restart_id": restart_id,
-        "disorder_seed": disorder_seed,
-        "model_seed": model_kwargs.get("seed"),
-        "algorithm_seed": algorithm_kwargs.get("seed"),
+        "disorder_id": disorder_id,
         "alpha": float(alpha) if space == "relaxed" else None,
         "lam": float(lam) if space == "relaxed" else None,
     }
@@ -90,6 +91,7 @@ def run_grid(
 
     for model_kwargs in parameter_grid(model_grid):
         for algorithm_kwargs in parameter_grid(algorithm_grid):
+            disorder_id = model_kwargs.get("_disorder_id")
             if task == "optimization":
                 for restart_id in range(int(n_restarts)):
                     record = run_single(
@@ -107,23 +109,20 @@ def run_grid(
                         experiment_name=experiment_name,
                         chain_id=None,
                         restart_id=restart_id,
-                        disorder_seed=model_kwargs.get("seed"),
+                        disorder_id=disorder_id,
                     )
                     record["meta"]["condition_id"] = condition_id
                     records.append(record)
                     table.append(flatten_record(record))
             elif task == "sampling":
                 for chain_id in range(int(n_chains)):
-                    alg_kwargs = deepcopy(algorithm_kwargs)
-                    if "seed" in alg_kwargs and alg_kwargs["seed"] is not None:
-                        alg_kwargs["seed"] = int(alg_kwargs["seed"]) + chain_id
                     record = run_single(
                         task=task,
                         space=space,
                         model_class=model_class,
                         model_kwargs=model_kwargs,
                         algorithm_class=algorithm_class,
-                        algorithm_kwargs=alg_kwargs,
+                        algorithm_kwargs=algorithm_kwargs,
                         run_kwargs=run_kwargs,
                         alpha=alpha,
                         lam=lam,
@@ -132,7 +131,7 @@ def run_grid(
                         experiment_name=experiment_name,
                         chain_id=chain_id,
                         restart_id=None,
-                        disorder_seed=model_kwargs.get("seed"),
+                        disorder_id=disorder_id,
                     )
                     record["meta"]["condition_id"] = condition_id
                     records.append(record)

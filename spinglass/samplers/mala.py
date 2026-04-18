@@ -6,13 +6,12 @@ from ..utils.rng import make_rng
 
 
 class MALASampler:
-    def __init__(self, hamiltonian, beta, step_size, seed=None):
+    def __init__(self, hamiltonian, beta, step_size):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
         self.step_size = float(step_size)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def _log_target(self, x):
         return -self.beta * self.hamiltonian.energy(x)
@@ -94,7 +93,6 @@ class MALASampler:
             "mean_energy": float(np.mean(trace_out["energy"])),
             "acceptance_rate": accept_count / max(1, n_steps),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": x}
         if store_samples:

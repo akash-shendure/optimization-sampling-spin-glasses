@@ -6,12 +6,11 @@ from ..utils.rng import make_rng
 
 
 class GradientDescentOptimizer:
-    def __init__(self, hamiltonian, lr=1e-2, seed=None):
+    def __init__(self, hamiltonian, lr=1e-2):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.lr = float(lr)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def run(
         self,
@@ -86,7 +85,6 @@ class GradientDescentOptimizer:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_state": x, "best_state": best_x}
         if project:

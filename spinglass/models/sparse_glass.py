@@ -8,14 +8,14 @@ class SparseRandomGlass(SpinModel):
     topology = "erdos_renyi"
 
     # c is target mean degree (so p = c/(n-1))
-    def __init__(self, n, c=3.0, disorder="gaussian", scale=1.0, seed=None):
+    def __init__(self, n, c=3.0, disorder="gaussian", scale=1.0):
         self.c = float(c)
         self.disorder = disorder
         self.scale = float(scale)
         J = build_erdos_renyi_couplings(
-            n, c=self.c, disorder=self.disorder, scale=self.scale, seed=seed
+            n, c=self.c, disorder=self.disorder, scale=self.scale
         )
-        super().__init__(n=n, J=J, seed=seed)
+        super().__init__(n=n, J=J)
 
     def describe(self):
         return {

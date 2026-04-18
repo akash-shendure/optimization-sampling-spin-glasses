@@ -30,22 +30,14 @@ def linear_beta_schedule(beta_hot, beta_cold, n_steps):
     return np.linspace(float(beta_hot), float(beta_cold), int(n_steps))
 
 
-def _disorder_seeds(base_seed, n_disorders):
-    """deterministic spread of disorder seeds from a single base_seed."""
-    base = int(base_seed)
-    return [base + 1000 * k for k in range(int(n_disorders))]
-
-
-def _inject_seeds(model_kwargs, n_disorders, base_seed):
-    """expand a model_kwargs grid so every (model, beta) cell averages over
-    n_disorders independent disorder realizations."""
+def _inject_replicates(model_kwargs, n_disorders):
+    """expand a model_kwargs grid so every (model, beta) cell fans out over
+    n_disorders independent realizations. the dummy `_disorder_id` key drives
+    fanout but is popped before the model constructor is called."""
     if n_disorders is None or int(n_disorders) <= 1:
         return dict(model_kwargs)
     out = dict(model_kwargs)
-    # if caller already passed a list of seeds, respect it
-    if "seed" in out and isinstance(out["seed"], (list, tuple)) and len(out["seed"]) > 1:
-        return out
-    out["seed"] = _disorder_seeds(base_seed, n_disorders)
+    out["_disorder_id"] = list(range(int(n_disorders)))
     return out
 
 
@@ -53,9 +45,9 @@ def _probe_n_spins(model_class, model_kwargs):
     """build a tiny probe of the first grid cell to read n_spins for budget math."""
     first = {}
     for key, value in model_kwargs.items():
+        if key == "_disorder_id":
+            continue
         first[key] = value[0] if isinstance(value, (list, tuple)) and len(value) > 0 else value
-    if isinstance(first.get("seed"), int):
-        pass
     probe = model_class(**first)
     return int(probe.n)
 
@@ -73,8 +65,8 @@ def _grouping_keys(model_kwargs, primary_key):
     from different model sizes into the same grouped row."""
     keys = []
     for name, value in model_kwargs.items():
-        if name == "seed":
-            continue  # disorder seeds are the thing we AVERAGE over
+        if name == "_disorder_id":
+            continue  # disorder replicates are the thing we AVERAGE over
         if isinstance(value, (list, tuple)) and len(value) > 1:
             keys.append(f"model_{name}")
     keys.append(primary_key)
@@ -97,7 +89,6 @@ def sampling_beta_sweep(
     alpha=1.0,
     lam=0.0,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     """run `sampler_class` at each target beta, with n_chains independent chains.
@@ -106,7 +97,7 @@ def sampling_beta_sweep(
     disorder realizations per (model, beta) cell, and grouped summaries average
     across them."""
     sampler_kwargs = dict(sampler_kwargs or {})
-    model_grid = _inject_seeds(model_kwargs, n_disorders, base_seed)
+    model_grid = _inject_replicates(model_kwargs, n_disorders)
     n_spins = _probe_n_spins(model_class, model_grid)
     effective_steps = _resolve_steps(budget, n_steps, n_spins, space)
     effective_burn = int(round(burn_in * effective_steps / max(1, int(n_steps))))
@@ -114,7 +105,6 @@ def sampling_beta_sweep(
     algorithm_grid = {"beta": list(map(float, betas))}
     for key, value in sampler_kwargs.items():
         algorithm_grid.setdefault(key, [value])
-    algorithm_grid.setdefault("seed", [1000])
 
     run_kwargs = {
         "n_steps": int(effective_steps),
@@ -164,17 +154,15 @@ def optimization_beta_sweep(
     experiment_name=None,
     keep_artifacts=False,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     """run SimulatedAnnealing with a linear schedule [beta_hot, target_beta]
     at each target beta. best energy vs target beta is the difficulty curve."""
-    model_grid = _inject_seeds(model_kwargs, n_disorders, base_seed)
+    model_grid = _inject_replicates(model_kwargs, n_disorders)
     n_spins = _probe_n_spins(model_class, model_grid)
     effective_steps = _resolve_steps(budget, n_steps, n_spins, "discrete")
     algorithm_grid = {
         "beta_schedule": [linear_beta_schedule(beta_hot, b, effective_steps) for b in target_betas],
-        "seed": [2000],
     }
     run_kwargs = {"n_steps": int(effective_steps), "trace_every": int(trace_every)}
     if target_energy is not None:
@@ -227,7 +215,6 @@ def relaxed_sampling_beta_sweep(
     trace_every=10,
     experiment_name=None,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     """Langevin beta sweep on the relaxed surrogate — relaxed counterpart to
@@ -249,7 +236,6 @@ def relaxed_sampling_beta_sweep(
         alpha=alpha,
         lam=lam,
         n_disorders=n_disorders,
-        base_seed=base_seed,
         budget=budget,
     )
 
@@ -265,7 +251,6 @@ def relaxed_optimization_beta_sweep(
     trace_every=25,
     experiment_name=None,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     """Adam on the relaxed surrogate across learning rates, with projection.
@@ -273,10 +258,10 @@ def relaxed_optimization_beta_sweep(
     Adam has no beta knob, so the sweep dimension here is lr; the resulting
     "best projected energy vs lr" curve is the relaxed analog of the
     SA difficulty curve."""
-    model_grid = _inject_seeds(model_kwargs, n_disorders, base_seed)
+    model_grid = _inject_replicates(model_kwargs, n_disorders)
     n_spins = _probe_n_spins(model_class, model_grid)
     effective_steps = _resolve_steps(budget, n_steps, n_spins, "relaxed")
-    algorithm_grid = {"lr": list(map(float, lrs)), "seed": [3000]}
+    algorithm_grid = {"lr": list(map(float, lrs))}
     run_kwargs = {
         "n_steps": int(effective_steps),
         "trace_every": int(trace_every),
@@ -316,14 +301,13 @@ def canonical_study(
     n_chains=4,
     n_restarts=6,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     """the full four-panel study: discrete + relaxed, optimization + sampling.
 
     budget applies uniformly to all four panels so comparisons stay fair.
     n_disorders fans each cell over independent disorder realizations."""
-    shared = dict(n_disorders=n_disorders, base_seed=base_seed, budget=budget)
+    shared = dict(n_disorders=n_disorders, budget=budget)
     return {
         ("discrete", "sampling"): sampling_beta_sweep(
             model_class, model_kwargs, betas, n_chains=n_chains, n_steps=n_steps, **shared

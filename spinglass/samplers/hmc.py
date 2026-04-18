@@ -10,14 +10,13 @@ from ..utils.rng import make_rng
 
 
 class HMCSampler:
-    def __init__(self, hamiltonian, beta, step_size, n_leapfrog=10, seed=None):
+    def __init__(self, hamiltonian, beta, step_size, n_leapfrog=10):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
         self.step_size = float(step_size)
         self.n_leapfrog = int(n_leapfrog)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # U(x) = beta * H_tilde(x); grad_U(x) = beta * grad_H_tilde(x)
     def _potential_and_grad(self, x):
@@ -104,7 +103,6 @@ class HMCSampler:
             "mean_energy": float(np.mean(trace_out["energy"])),
             "acceptance_rate": accept_count / max(1, n_steps),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": x}
         if store_samples:

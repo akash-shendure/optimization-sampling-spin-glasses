@@ -18,15 +18,6 @@ from ..models.sparse_glass import SparseRandomGlass
 from .budget import sweeps
 
 
-# name -> preset dict with keys:
-#   model_class       : SpinModel subclass
-#   model_kwargs      : grid dict fed into run_grid (lists of values)
-#   betas             : target beta grid for the sweep
-#   n_disorders       : independent disorder realizations per cell
-#   n_chains          : per-disorder sampling chain count
-#   n_restarts        : per-disorder optimizer restart count
-#   budget            : Budget object; resolved per-model-size at run time
-#   description       : one-line human label
 PRESETS = {
     "ferro_scaling": {
         "model_class": IsingFerromagnet2D,
@@ -46,7 +37,7 @@ PRESETS = {
         "n_chains": 4,
         "n_restarts": 4,
         "budget": sweeps(150),
-        "description": "Edwards-Anderson pm1 glass L in {8,12}, 4 disorder seeds",
+        "description": "Edwards-Anderson pm1 glass L in {8,12}, 4 disorder realizations",
     },
     "er_glass": {
         "model_class": SparseRandomGlass,

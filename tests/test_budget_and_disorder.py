@@ -7,7 +7,7 @@ import numpy as np
 
 from spinglass import Budget, budget_to_n_steps
 from spinglass.experiments.budget import hamiltonian_evals, steps, sweeps
-from spinglass.experiments.studies import _disorder_seeds, _inject_seeds, sampling_beta_sweep
+from spinglass.experiments.studies import _inject_replicates, sampling_beta_sweep
 from spinglass import IsingFerromagnet2D
 
 
@@ -53,31 +53,21 @@ def test_budget_to_n_steps_accepts_plain_int():
     assert budget_to_n_steps(500, n_spins=16, space="relaxed") == 500
 
 
-def test_disorder_seeds_are_distinct_and_ordered():
-    seeds = _disorder_seeds(base_seed=7, n_disorders=5)
-    assert len(seeds) == 5
-    assert len(set(seeds)) == 5
-    assert seeds == sorted(seeds)
-    assert seeds[0] == 7
+def test_inject_replicates_generates_n_disorders():
+    out = _inject_replicates({"L": [8]}, n_disorders=4)
+    assert "_disorder_id" in out
+    assert out["_disorder_id"] == [0, 1, 2, 3]
 
 
-def test_inject_seeds_generates_n_disorders():
-    out = _inject_seeds({"L": [8]}, n_disorders=4, base_seed=3)
-    assert "seed" in out
-    assert isinstance(out["seed"], list)
-    assert len(out["seed"]) == 4
-    assert len(set(out["seed"])) == 4
-
-
-def test_inject_seeds_respects_caller_supplied_seeds():
-    # if caller already supplied a list of seeds, leave it alone
-    out = _inject_seeds({"L": [8], "seed": [10, 20, 30]}, n_disorders=5, base_seed=0)
-    assert out["seed"] == [10, 20, 30]
+def test_inject_replicates_noop_when_single():
+    out = _inject_replicates({"L": [8]}, n_disorders=1)
+    assert "_disorder_id" not in out
+    assert out == {"L": [8]}
 
 
 def test_sampling_sweep_fans_over_disorders_and_averages():
     betas = [0.3, 0.8]
-    # two disorder seeds, three chains each — summary should average across them
+    # two disorder replicates, two chains each — summary should average across them
     res = sampling_beta_sweep(
         IsingFerromagnet2D,
         model_kwargs={"L": [6]},
@@ -87,9 +77,8 @@ def test_sampling_sweep_fans_over_disorders_and_averages():
         burn_in=40,
         trace_every=5,
         n_disorders=2,
-        base_seed=13,
     )
-    # 2 betas x 2 disorder seeds x 2 chains = 8 rows
+    # 2 betas x 2 disorder replicates x 2 chains = 8 rows
     assert len(res["records"]) == 8
     # but grouped summary collapses by beta
     assert len(res["grouped"]) == 2
@@ -119,9 +108,8 @@ if __name__ == "__main__":
     test_budget_hamiltonian_evals_matches_compute()
     test_budget_rejects_bad_inputs()
     test_budget_to_n_steps_accepts_plain_int()
-    test_disorder_seeds_are_distinct_and_ordered()
-    test_inject_seeds_generates_n_disorders()
-    test_inject_seeds_respects_caller_supplied_seeds()
+    test_inject_replicates_generates_n_disorders()
+    test_inject_replicates_noop_when_single()
     test_sampling_sweep_fans_over_disorders_and_averages()
     test_sampling_sweep_with_budget_honors_sweeps_convention()
     print("test_budget_and_disorder OK")

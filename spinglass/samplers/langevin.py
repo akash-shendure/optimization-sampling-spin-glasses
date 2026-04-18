@@ -6,13 +6,12 @@ from ..utils.rng import make_rng
 
 
 class LangevinSampler:
-    def __init__(self, hamiltonian, beta, step_size, seed=None):
+    def __init__(self, hamiltonian, beta, step_size):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
         self.step_size = float(step_size)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def run(
         self,
@@ -66,7 +65,6 @@ class LangevinSampler:
             "final_energy": float(energy),
             "mean_energy": float(np.mean(trace_out["energy"])),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": x}
         if store_samples:

@@ -5,20 +5,16 @@ import scipy.sparse as sp
 from ..utils.rng import make_rng
 
 
-# sample an Erdos-Renyi edge set with expected average degree c = p*(n-1)
-# returns arrays (i, j) with i < j
 def _sample_er_edges(n, p, rng):
-    # sample upper-triangular indicator in blocks to avoid O(n^2) memory blowup
-    # for moderate n this direct approach is fine; swap for geometric-gap method if n grows
+    # direct upper-triangular sample; swap to geometric-gap if n grows past O(n^2) memory
     iu, ju = np.triu_indices(n, k=1)
     mask = rng.random(iu.shape[0]) < p
     return iu[mask], ju[mask]
 
 
-# sparse random-graph glass: ER edges with iid couplings
-# `c` is the target mean degree; we pick p = c/(n-1)
-def build_erdos_renyi_couplings(n, c=3.0, disorder="gaussian", scale=1.0, seed=None):
-    rng = make_rng(seed)
+# c is target mean degree, so p = c/(n-1)
+def build_erdos_renyi_couplings(n, c=3.0, disorder="gaussian", scale=1.0):
+    rng = make_rng()
     p = min(1.0, c / max(n - 1, 1))
     ei, ej = _sample_er_edges(n, p, rng)
     m = ei.shape[0]

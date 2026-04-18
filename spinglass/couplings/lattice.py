@@ -10,8 +10,7 @@ def _flat(r, c, L):
     return (r % L) * L + (c % L)
 
 
-# enumerate unique undirected edges on an LxL torus with periodic BCs
-# returns (i, j) arrays with i < j
+# unique undirected edges with i < j
 def build_lattice_edges(L, periodic=True):
     edges_i = []
     edges_j = []
@@ -31,8 +30,7 @@ def build_lattice_edges(L, periodic=True):
     return np.array(edges_i, dtype=np.int64), np.array(edges_j, dtype=np.int64)
 
 
-# build a symmetric sparse coupling matrix from edges + per-edge weights
-# zero diagonal; CSR for fast matvec (used everywhere downstream)
+# CSR zero-diagonal for fast matvec downstream
 def _edges_to_sym_csr(n, ei, ej, w):
     rows = np.concatenate([ei, ej])
     cols = np.concatenate([ej, ei])
@@ -43,7 +41,6 @@ def _edges_to_sym_csr(n, ei, ej, w):
     return J
 
 
-# uniform J_ij = +J0 ferromagnet on the lattice
 def ferromagnet_couplings(L, J0=1.0, periodic=True):
     n = L * L
     ei, ej = build_lattice_edges(L, periodic=periodic)
@@ -51,9 +48,9 @@ def ferromagnet_couplings(L, J0=1.0, periodic=True):
     return _edges_to_sym_csr(n, ei, ej, w)
 
 
-# Edwards-Anderson: same lattice edges but each J_ij iid in {-1,+1} (or Gaussian)
-def ea_couplings(L, disorder="pm1", scale=1.0, seed=None, periodic=True):
-    rng = make_rng(seed)
+# same lattice edges as ferromagnet but with iid disordered J_ij
+def ea_couplings(L, disorder="pm1", scale=1.0, periodic=True):
+    rng = make_rng()
     n = L * L
     ei, ej = build_lattice_edges(L, periodic=periodic)
     m = ei.shape[0]

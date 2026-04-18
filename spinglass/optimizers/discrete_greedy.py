@@ -7,14 +7,13 @@ from ..utils.spin import update_local_fields_fast
 
 
 class GreedySpinDescent:
-    def __init__(self, hamiltonian, proposal="best", seed=None):
+    def __init__(self, hamiltonian, proposal="best"):
         if proposal not in {"best", "random"}:
             raise ValueError("proposal must be 'best' or 'random'")
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.proposal = proposal
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def run(self, s0=None, n_steps=None, trace_every=1, target_energy=None, store_states=False):
         s = self.model.random_state(self.rng) if s0 is None else np.asarray(s0, dtype=np.int8).copy()
@@ -74,7 +73,6 @@ class GreedySpinDescent:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_state": s, "best_state": best_state}
         if store_states:

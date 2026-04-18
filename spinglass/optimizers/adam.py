@@ -6,15 +6,14 @@ from ..utils.rng import make_rng
 
 
 class AdamOptimizer:
-    def __init__(self, hamiltonian, lr=1e-2, beta1=0.9, beta2=0.999, eps=1e-8, seed=None):
+    def __init__(self, hamiltonian, lr=1e-2, beta1=0.9, beta2=0.999, eps=1e-8):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.lr = float(lr)
         self.beta1 = float(beta1)
         self.beta2 = float(beta2)
         self.eps = float(eps)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     def run(
         self,
@@ -96,7 +95,6 @@ class AdamOptimizer:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_state": x, "best_state": best_x}
         if project:

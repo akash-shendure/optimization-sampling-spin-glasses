@@ -122,7 +122,7 @@ def _make_title(cfg, scaling=False):
 def compute_disorder_stats(result):
     per_disorder = summarize_sampling_table(
         result["table"], records=result["records"],
-        group_by=["algorithm_beta", "model_seed"]
+        group_by=["algorithm_beta", "disorder_id"]
     )
     by_beta = defaultdict(list)
     for row in per_disorder:
