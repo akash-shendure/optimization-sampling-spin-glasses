@@ -7,14 +7,14 @@ from ..utils.spin import update_local_fields_fast
 
 # best-improvement (or random-improving) flip on s in {-1,+1}^n; halts at a local min
 class GreedySpinDescent:
-    def __init__(self, hamiltonian, proposal="best", seed=None):
+    # proposal='best' picks argmin dE; 'random' picks uniformly among improving flips
+    def __init__(self, hamiltonian, proposal="best"):
         if proposal not in {"best", "random"}:
             raise ValueError("proposal must be 'best' or 'random'")
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.proposal = proposal
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # main descent loop; uses cached local fields h_i = sum_j J_ij s_j
     def run(self, s0=None, n_steps=None, trace_every=1, target_energy=None, store_states=False):
@@ -80,7 +80,6 @@ class GreedySpinDescent:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_state": s, "best_state": best_state}
         if store_states:

@@ -3,8 +3,8 @@ import numpy as np
 
 from ..utils.rng import make_rng
 
-def build_sk_couplings(n, scale=None, seed=None):
-    rng = make_rng(seed)
+def build_sk_couplings(n, scale=None):
+    rng = make_rng()
     sigma = (1.0 / np.sqrt(n)) if scale is None else scale
     A = rng.normal(0.0, sigma, size=(n, n))
     J = np.triu(A, k=1)

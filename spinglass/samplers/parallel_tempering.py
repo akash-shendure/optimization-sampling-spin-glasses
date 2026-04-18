@@ -8,7 +8,8 @@ from ..utils.spin import update_local_fields_fast
 # adjacent-pair swap accept prob = min(1, exp((beta_r - beta_{r+1})(E_{r+1} - E_r)))
 # helps cold replica escape barriers via excursions to hot replicas
 class ParallelTemperingSampler:
-    def __init__(self, hamiltonian, betas, swap_interval=1, target_index=None, seed=None):
+    # betas: 1d ascending or descending ladder; target_index picks which replica we report
+    def __init__(self, hamiltonian, betas, swap_interval=1, target_index=None):
         betas = np.asarray(betas, dtype=np.float64)
         if betas.ndim != 1 or betas.size < 2:
             raise ValueError("betas must be a 1d array with at least two entries")
@@ -18,8 +19,7 @@ class ParallelTemperingSampler:
         self.swap_interval = int(swap_interval)
         # default target is the coldest replica (largest beta) — usually the ground-state hunter
         self.target_index = int(np.argmax(betas) if target_index is None else target_index)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # run all replicas in lockstep; one MH step per replica per outer step, swaps every swap_interval
     def run(self, states0=None, n_steps=1000, burn_in=0, thin=1, trace_every=1, store_samples=False):
@@ -100,7 +100,6 @@ class ParallelTemperingSampler:
             "acceptance_rate": accept_count / max(1, n_steps * n_replica),
             "swap_acceptance_rate": swap_accepts / max(1, swap_attempts),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_states": states, "target_state": states[self.target_index].copy()}
         if store_samples:

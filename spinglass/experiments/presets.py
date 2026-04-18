@@ -28,7 +28,7 @@ PRESETS = {
         "n_chains": 4,
         "n_restarts": 4,
         "budget": sweeps(150),
-        "description": "Edwards-Anderson pm1 glass L in {8,12}, 4 disorder seeds",
+        "description": "Edwards-Anderson pm1 glass L in {8,12}, 4 disorder realizations",
     },
     # erdos-renyi sparse random graph with gaussian couplings
     "er_glass": {

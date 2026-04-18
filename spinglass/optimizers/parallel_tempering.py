@@ -7,7 +7,8 @@ from ..utils.spin import update_local_fields_fast
 
 # each replica runs its own MH chain at its beta; swaps shuttle good states up the ladder
 class ParallelTemperingOptimizer:
-    def __init__(self, hamiltonian, betas, swap_interval=1, seed=None):
+    # betas must be 1d with >= 2 entries (ladder needs at least two rungs to swap)
+    def __init__(self, hamiltonian, betas, swap_interval=1):
         betas = np.asarray(betas, dtype=np.float64)
         if betas.ndim != 1 or betas.size < 2:
             raise ValueError("betas must be a 1d array with at least two entries")
@@ -15,8 +16,7 @@ class ParallelTemperingOptimizer:
         self.model = hamiltonian.model
         self.betas = betas
         self.swap_interval = int(swap_interval)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # main loop: per-step MH sweep across replicas, then optional swap pass
     def run(self, states0=None, n_steps=1000, trace_every=1, target_energy=None, store_states=False):
@@ -105,7 +105,6 @@ class ParallelTemperingOptimizer:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_states": states, "best_state": best_state, "energies": energies.copy()}
         if store_states:

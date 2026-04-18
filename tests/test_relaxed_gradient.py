@@ -24,9 +24,9 @@ def _check_grad(H, x, rtol=1e-5, atol=1e-6):
 
 # pure interaction term, alpha=1, no penalty — exercises the J t branch only
 def test_grad_on_ea_alpha_1_lambda_0():
-    model = EdwardsAnderson2D(L=4, disorder="pm1", seed=0)
+    model = EdwardsAnderson2D(L=4, disorder="pm1")
     H = RelaxedHamiltonian(model, alpha=1.0, lam=0.0)
-    rng = np.random.default_rng(1)
+    rng = np.random.default_rng()
     for _ in range(3):
         # 0.5 std keeps x in a regime where sech^2 isn't near zero
         x = 0.5 * rng.standard_normal(model.n)
@@ -34,9 +34,9 @@ def test_grad_on_ea_alpha_1_lambda_0():
 
 # linear penalty active; loosen tolerances because lam term adds curvature
 def test_grad_on_ea_with_lambda_penalty():
-    model = EdwardsAnderson2D(L=4, disorder="gaussian", seed=2)
+    model = EdwardsAnderson2D(L=4, disorder="gaussian")
     H = RelaxedHamiltonian(model, alpha=1.5, lam=0.25)
-    rng = np.random.default_rng(3)
+    rng = np.random.default_rng()
     for _ in range(3):
         x = 0.3 * rng.standard_normal(model.n)
         # rtol=1e-4, atol=1e-5 absorb the extra FD error from the penalty
@@ -44,17 +44,17 @@ def test_grad_on_ea_with_lambda_penalty():
 
 # dense SK to make sure the gradient path also handles non-sparse J
 def test_grad_on_sk_dense():
-    model = SherringtonKirkpatrick(n=12, seed=4)
+    model = SherringtonKirkpatrick(n=12)
     H = RelaxedHamiltonian(model, alpha=1.0, lam=0.1)
-    rng = np.random.default_rng(5)
+    rng = np.random.default_rng()
     x = 0.4 * rng.standard_normal(model.n)
     _check_grad(H, x)
 
 # energy_and_grad must return exactly the same numbers as energy + grad called separately
 def test_energy_and_grad_matches_separate_calls():
-    model = EdwardsAnderson2D(L=5, disorder="pm1", seed=6)
+    model = EdwardsAnderson2D(L=5, disorder="pm1")
     H = RelaxedHamiltonian(model, alpha=1.2, lam=0.05)
-    rng = np.random.default_rng(7)
+    rng = np.random.default_rng()
     x = 0.6 * rng.standard_normal(model.n)
     E1 = H.energy(x)
     g1 = H.grad(x)
@@ -65,7 +65,7 @@ def test_energy_and_grad_matches_separate_calls():
 
 # project maps R^n -> {-1, +1}^n as int8; exact zeros must tiebreak to +1
 def test_project_gives_pm_one_int8():
-    rng = np.random.default_rng(8)
+    rng = np.random.default_rng()
     x = rng.standard_normal(32)
     s = RelaxedHamiltonian.project(x)
     assert s.dtype == np.int8
@@ -77,11 +77,11 @@ def test_project_gives_pm_one_int8():
 def test_energy_matches_discrete_at_projected_extremes():
     from spinglass import DiscreteHamiltonian
 
-    model = EdwardsAnderson2D(L=5, seed=9)
+    model = EdwardsAnderson2D(L=5)
     Hd = DiscreteHamiltonian(model)
     # alpha=8 saturates tanh hard so t ~ s, lam=0 kills the penalty term
     Hr = RelaxedHamiltonian(model, alpha=8.0, lam=0.0)
-    rng = np.random.default_rng(10)
+    rng = np.random.default_rng()
     x = 2.0 * (rng.integers(0, 2, size=model.n).astype(np.float64) - 0.5)
     E_rel = Hr.energy(x)
     s = RelaxedHamiltonian.project(x)

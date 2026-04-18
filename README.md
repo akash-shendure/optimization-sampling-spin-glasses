@@ -23,9 +23,9 @@ Requires `numpy`, `scipy`, `matplotlib`. Pytest is optional — the zero-depende
 from spinglass import EdwardsAnderson2D, DiscreteHamiltonian, SimulatedAnnealing
 import numpy as np
 
-model = EdwardsAnderson2D(L=16, disorder="pm1", seed=0)
+model = EdwardsAnderson2D(L=16, disorder="pm1")
 Hd = DiscreteHamiltonian(model)
-result = SimulatedAnnealing(Hd, beta_schedule=np.linspace(0.1, 2.0, 5000), seed=0).run(n_steps=5000)
+result = SimulatedAnnealing(Hd, beta_schedule=np.linspace(0.1, 2.0, 5000)).run(n_steps=5000)
 print(result["summary"]["best_energy"])
 ```
 

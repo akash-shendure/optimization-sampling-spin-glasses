@@ -6,13 +6,13 @@ from ..utils.rng import make_rng
 
 # proposal q(x'|x) = N(x - step*beta*grad U(x), 2*step I); MH alpha uses log_q correction
 class MALASampler:
-    def __init__(self, hamiltonian, beta, step_size, seed=None):
+    # same wiring as langevin; step_size acts as the ULA dt inside the proposal
+    def __init__(self, hamiltonian, beta, step_size):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
         self.step_size = float(step_size)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # unnormalized log target: -beta * H_tilde(x)
     def _log_target(self, x):
@@ -103,7 +103,6 @@ class MALASampler:
             "mean_energy": float(np.mean(trace_out["energy"])),
             "acceptance_rate": accept_count / max(1, n_steps),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": x}
         if store_samples:

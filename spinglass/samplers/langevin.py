@@ -6,13 +6,13 @@ from ..utils.rng import make_rng
 
 # no MH correction — bias-for-speed; samples target proportional to exp(-beta H_tilde) only as step -> 0
 class LangevinSampler:
-    def __init__(self, hamiltonian, beta, step_size, seed=None):
+    # hamiltonian must expose energy_and_grad(x); step_size is the euler-maruyama dt
+    def __init__(self, hamiltonian, beta, step_size):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
         self.step_size = float(step_size)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # project=True logs discrete energy of sign(x) using the supplied discrete hamiltonian
     def run(
@@ -71,7 +71,6 @@ class LangevinSampler:
             "final_energy": float(energy),
             "mean_energy": float(np.mean(trace_out["energy"])),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": x}
         if store_samples:

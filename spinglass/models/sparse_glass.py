@@ -7,14 +7,15 @@ class SparseRandomGlass(SpinModel):
     name = "SparseRandomGlass"
     topology = "erdos_renyi"
 
-    def __init__(self, n, c=3.0, disorder="gaussian", scale=1.0, seed=None):
+    # c = expected degree; scale rescales bond magnitudes
+    def __init__(self, n, c=3.0, disorder="gaussian", scale=1.0):
         self.c = float(c)
         self.disorder = disorder
         self.scale = float(scale)
         J = build_erdos_renyi_couplings(
-            n, c=self.c, disorder=self.disorder, scale=self.scale, seed=seed
+            n, c=self.c, disorder=self.disorder, scale=self.scale
         )
-        super().__init__(n=n, J=J, seed=seed)
+        super().__init__(n=n, J=J)
 
     # params for logging / experiment manifests
     def describe(self):

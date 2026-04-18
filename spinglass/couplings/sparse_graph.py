@@ -10,8 +10,10 @@ def _sample_er_edges(n, p, rng):
     mask = rng.random(iu.shape[0]) < p
     return iu[mask], ju[mask]
 
-def build_erdos_renyi_couplings(n, c=3.0, disorder="gaussian", scale=1.0, seed=None):
-    rng = make_rng(seed)
+# build a symmetric sparse J on an erdos-renyi graph
+# c is target mean degree; p = c/(n-1) gives expected degree c
+def build_erdos_renyi_couplings(n, c=3.0, disorder="gaussian", scale=1.0):
+    rng = make_rng()
     p = min(1.0, c / max(n - 1, 1))  # clamp for tiny n where c/(n-1) > 1
     ei, ej = _sample_er_edges(n, p, rng)
     m = ei.shape[0]

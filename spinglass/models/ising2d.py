@@ -7,12 +7,13 @@ class IsingFerromagnet2D(SpinModel):
     name = "IsingFerromagnet2D"
     topology = "lattice_2d"
 
-    def __init__(self, L, J0=1.0, periodic=True, seed=None):
+    # J0 sets bond strength; periodic toggles torus vs open boundary
+    def __init__(self, L, J0=1.0, periodic=True):
         self.L = int(L)
         self.J0 = float(J0)
         self.periodic = bool(periodic)
         J = ferromagnet_couplings(self.L, J0=self.J0, periodic=self.periodic)
-        super().__init__(n=self.L * self.L, J=J, seed=seed)
+        super().__init__(n=self.L * self.L, J=J)  # n = L^2 sites
 
     # params for logging / experiment manifests
     def describe(self):

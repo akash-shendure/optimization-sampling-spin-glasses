@@ -7,12 +7,12 @@ from ..utils.spin import update_local_fields_fast
 
 # always resamples s_i from its full conditional — no reject step
 class GibbsSampler:
-    def __init__(self, hamiltonian, beta, seed=None):
+    # same plumbing as metropolis; rng seeded via make_rng
+    def __init__(self, hamiltonian, beta):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # n_steps single-site gibbs sweeps with optional sample retention
     def run(self, s0=None, n_steps=1000, burn_in=0, thin=1, trace_every=1, store_samples=False):
@@ -65,7 +65,6 @@ class GibbsSampler:
             "final_energy": float(energy),
             "mean_energy": float(np.mean(trace_out["energy"])),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": s}
         if store_samples:

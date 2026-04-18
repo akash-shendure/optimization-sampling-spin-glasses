@@ -6,14 +6,14 @@ from ..utils.rng import make_rng
 
 # H(x,p) = U(x) + 0.5 |p|^2 with U = beta * H_tilde; accept on energy conservation error
 class HMCSampler:
-    def __init__(self, hamiltonian, beta, step_size, n_leapfrog=10, seed=None):
+    # n_leapfrog steps of size step_size per proposal — trajectory length = n_leapfrog * step_size
+    def __init__(self, hamiltonian, beta, step_size, n_leapfrog=10):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
         self.step_size = float(step_size)
         self.n_leapfrog = int(n_leapfrog)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # U(x) = beta * H_tilde(x), grad_U = beta * grad H_tilde
     def _potential_and_grad(self, x):
@@ -110,7 +110,6 @@ class HMCSampler:
             "mean_energy": float(np.mean(trace_out["energy"])),
             "acceptance_rate": accept_count / max(1, n_steps),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": x}
         if store_samples:

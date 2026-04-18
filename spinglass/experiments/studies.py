@@ -14,27 +14,23 @@ from .runner import run_grid
 def linear_beta_schedule(beta_hot, beta_cold, n_steps):
     return np.linspace(float(beta_hot), float(beta_cold), int(n_steps))
 
-def _disorder_seeds(base_seed, n_disorders):
-    base = int(base_seed)
-    return [base + 1000 * k for k in range(int(n_disorders))]
-
-def _inject_seeds(model_kwargs, n_disorders, base_seed):
+# attach a fake "_disorder_id" axis so the grid runner replicates the model
+def _inject_replicates(model_kwargs, n_disorders):
     if n_disorders is None or int(n_disorders) <= 1:
         return dict(model_kwargs)
     out = dict(model_kwargs)
-    if "seed" in out and isinstance(out["seed"], (list, tuple)) and len(out["seed"]) > 1:
-        return out
-    out["seed"] = _disorder_seeds(base_seed, n_disorders)
+    # each value of _disorder_id is a different seed when the model uses rng
+    out["_disorder_id"] = list(range(int(n_disorders)))
     return out
 
 # build a single concrete model to read n — used for budget resolution
 def _probe_n_spins(model_class, model_kwargs):
     first = {}
     for key, value in model_kwargs.items():
+        if key == "_disorder_id":
+            continue
         # take first option from list-valued kwargs to materialize one model
         first[key] = value[0] if isinstance(value, (list, tuple)) and len(value) > 0 else value
-    if isinstance(first.get("seed"), int):
-        pass
     probe = model_class(**first)
     return int(probe.n)
 
@@ -48,7 +44,7 @@ def _resolve_steps(budget, n_steps, n_spins, space):
 def _grouping_keys(model_kwargs, primary_key):
     keys = []
     for name, value in model_kwargs.items():
-        if name == "seed":
+        if name == "_disorder_id":
             continue
         # only include axes that actually sweep (len>1); fixed kwargs are uniform
         if isinstance(value, (list, tuple)) and len(value) > 1:
@@ -73,11 +69,10 @@ def sampling_beta_sweep(
     alpha=1.0,
     lam=0.0,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     sampler_kwargs = dict(sampler_kwargs or {})
-    model_grid = _inject_seeds(model_kwargs, n_disorders, base_seed)
+    model_grid = _inject_replicates(model_kwargs, n_disorders)
     n_spins = _probe_n_spins(model_class, model_grid)
     # resolve budget once for the probed n; assumes all replicates share n
     effective_steps = _resolve_steps(budget, n_steps, n_spins, space)
@@ -88,7 +83,6 @@ def sampling_beta_sweep(
     algorithm_grid = {"beta": list(map(float, betas))}
     for key, value in sampler_kwargs.items():
         algorithm_grid.setdefault(key, [value])
-    algorithm_grid.setdefault("seed", [1000])
 
     run_kwargs = {
         "n_steps": int(effective_steps),
@@ -139,17 +133,15 @@ def optimization_beta_sweep(
     experiment_name=None,
     keep_artifacts=False,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
-    model_grid = _inject_seeds(model_kwargs, n_disorders, base_seed)
+    model_grid = _inject_replicates(model_kwargs, n_disorders)
     n_spins = _probe_n_spins(model_class, model_grid)
     # discrete-space budget — single-flip cost model
     effective_steps = _resolve_steps(budget, n_steps, n_spins, "discrete")
     # one schedule per target beta — the sweep axis is the cold endpoint
     algorithm_grid = {
         "beta_schedule": [linear_beta_schedule(beta_hot, b, effective_steps) for b in target_betas],
-        "seed": [2000],
     }
     run_kwargs = {"n_steps": int(effective_steps), "trace_every": int(trace_every)}
     if target_energy is not None:
@@ -203,7 +195,6 @@ def relaxed_sampling_beta_sweep(
     trace_every=10,
     experiment_name=None,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
     # thin wrapper — delegates to discrete sampler with space="relaxed" + langevin
@@ -223,7 +214,6 @@ def relaxed_sampling_beta_sweep(
         alpha=alpha,
         lam=lam,
         n_disorders=n_disorders,
-        base_seed=base_seed,
         budget=budget,
     )
 
@@ -239,14 +229,13 @@ def relaxed_optimization_beta_sweep(
     trace_every=25,
     experiment_name=None,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
-    model_grid = _inject_seeds(model_kwargs, n_disorders, base_seed)
+    model_grid = _inject_replicates(model_kwargs, n_disorders)
     n_spins = _probe_n_spins(model_class, model_grid)
     # relaxed budget — one step touches all n spins
     effective_steps = _resolve_steps(budget, n_steps, n_spins, "relaxed")
-    algorithm_grid = {"lr": list(map(float, lrs)), "seed": [3000]}
+    algorithm_grid = {"lr": list(map(float, lrs))}
     run_kwargs = {
         "n_steps": int(effective_steps),
         "trace_every": int(trace_every),
@@ -286,10 +275,10 @@ def canonical_study(
     n_chains=4,
     n_restarts=6,
     n_disorders=1,
-    base_seed=0,
     budget=None,
 ):
-    shared = dict(n_disorders=n_disorders, base_seed=base_seed, budget=budget)
+    # shared kwargs passed to every panel so disorder/budget stay consistent
+    shared = dict(n_disorders=n_disorders, budget=budget)
     return {
         ("discrete", "sampling"): sampling_beta_sweep(
             model_class, model_kwargs, betas, n_chains=n_chains, n_steps=n_steps, **shared

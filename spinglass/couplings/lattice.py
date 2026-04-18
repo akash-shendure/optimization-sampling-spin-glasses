@@ -47,8 +47,9 @@ def ferromagnet_couplings(L, J0=1.0, periodic=True):
     w = np.full(ei.shape, J0, dtype=np.float64)
     return _edges_to_sym_csr(n, ei, ej, w)
 
-def ea_couplings(L, disorder="pm1", scale=1.0, seed=None, periodic=True):
-    rng = make_rng(seed)
+# edwards-anderson: same lattice topology but bonds are random (+/-1 or gaussian)
+def ea_couplings(L, disorder="pm1", scale=1.0, periodic=True):
+    rng = make_rng()
     n = L * L
     ei, ej = build_lattice_edges(L, periodic=periodic)
     m = ei.shape[0]

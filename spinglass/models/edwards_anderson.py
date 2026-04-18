@@ -7,7 +7,8 @@ class EdwardsAnderson2D(SpinModel):
     name = "EdwardsAnderson2D"
     topology = "lattice_2d"
 
-    def __init__(self, L, disorder="pm1", scale=1.0, periodic=True, seed=None):
+    # disorder='pm1' for ±1 bonds, 'gaussian' for N(0, scale^2); periodic toggles wrap
+    def __init__(self, L, disorder="pm1", scale=1.0, periodic=True):
         self.L = int(L)
         self.disorder = disorder
         self.scale = float(scale)
@@ -16,10 +17,9 @@ class EdwardsAnderson2D(SpinModel):
             self.L,
             disorder=self.disorder,
             scale=self.scale,
-            seed=seed,
             periodic=self.periodic,
         )
-        super().__init__(n=self.L * self.L, J=J, seed=seed)
+        super().__init__(n=self.L * self.L, J=J)  # n = L^2 sites
 
     # params for logging / experiment manifests
     def describe(self):

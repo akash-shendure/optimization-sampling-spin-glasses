@@ -7,12 +7,12 @@ from ..utils.spin import update_local_fields_fast
 
 # discrete MH: flip site i with prob min(1, exp(-beta dE)); dE = 2 s_i h_i
 class MetropolisSampler:
-    def __init__(self, hamiltonian, beta, seed=None):
+    # store handles to hamiltonian/model; rng is seeded via make_rng
+    def __init__(self, hamiltonian, beta):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta = float(beta)
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # n_steps single-site sweeps; trace_every / thin control logging and sample retention
     def run(self, s0=None, n_steps=1000, burn_in=0, thin=1, trace_every=1, store_samples=False):
@@ -67,7 +67,6 @@ class MetropolisSampler:
             "mean_energy": float(np.mean(trace_out["energy"])),
             "acceptance_rate": accept_count / max(1, n_steps),
             "n_kept_samples": len(kept),
-            "seed": self.seed,
         }
         artifacts = {"final_state": s}
         if store_samples:

@@ -10,10 +10,11 @@ class SpinModel(ABC):
     name: str = "SpinModel"
     topology: str = "generic"
 
-    def __init__(self, n, J, seed=None):
+    # store n and J, init the rng, then assert shape/symmetry/zero-diag
+    def __init__(self, n, J):
         self._n = int(n)
         self._J = J
-        self._rng = make_rng(seed)
+        self._rng = make_rng()
         self._validate()
 
     # number of spins
@@ -44,7 +45,7 @@ class SpinModel(ABC):
 
     # uniform s in {-1, +1}^n; caller may pass an external rng
     def random_state(self, rng=None):
-        r = self._rng if rng is None else make_rng(rng)
+        r = self._rng if rng is None else rng
         return r.choice(np.array([-1, 1], dtype=np.int8), size=self._n)
 
     # checks any J builder must satisfy: square, symmetric, zero diagonal

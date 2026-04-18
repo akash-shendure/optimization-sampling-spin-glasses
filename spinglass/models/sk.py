@@ -7,10 +7,10 @@ class SherringtonKirkpatrick(SpinModel):
     name = "SherringtonKirkpatrick"
     topology = "complete_graph"
 
-    def __init__(self, n, scale=None, seed=None):
+    def __init__(self, n, scale=None):
         self.scale = scale
-        J = build_sk_couplings(n, scale=scale, seed=seed)
-        super().__init__(n=n, J=J, seed=seed)
+        J = build_sk_couplings(n, scale=scale)
+        super().__init__(n=n, J=J)
 
     # params for logging / experiment manifests
     def describe(self):

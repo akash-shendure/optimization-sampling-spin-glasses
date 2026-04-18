@@ -25,16 +25,16 @@ def _assert_close(a, b, atol=1e-10, what=""):
 # cover sparse + dense, ferromagnetic + glassy, pm1 + gaussian disorder
 def _sample_models():
     return [
-        IsingFerromagnet2D(L=5, seed=0),
-        EdwardsAnderson2D(L=5, disorder="pm1", seed=1),
-        EdwardsAnderson2D(L=4, disorder="gaussian", seed=2),
-        SparseRandomGlass(n=24, c=3.0, seed=3),
-        SherringtonKirkpatrick(n=20, seed=4),
+        IsingFerromagnet2D(L=5),
+        EdwardsAnderson2D(L=5, disorder="pm1"),
+        EdwardsAnderson2D(L=4, disorder="gaussian"),
+        SparseRandomGlass(n=24, c=3.0),
+        SherringtonKirkpatrick(n=20),
     ]
 
 # H.energy must equal the O(n^2) double loop on random spin configs
 def test_energy_matches_brute_force():
-    rng = np.random.default_rng(10)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         for _ in range(3):
@@ -44,7 +44,7 @@ def test_energy_matches_brute_force():
 
 # local_fields h_i = sum_j J_ij s_j must equal a plain J @ s matvec
 def test_local_fields_match_matvec():
-    rng = np.random.default_rng(11)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         s = 2 * rng.integers(0, 2, size=model.n).astype(np.int8) - 1
@@ -55,7 +55,7 @@ def test_local_fields_match_matvec():
 
 # delta_energy(i) using cached h must equal E(flipped) - E(current)
 def test_delta_energy_matches_fresh_recompute():
-    rng = np.random.default_rng(12)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         s = 2 * rng.integers(0, 2, size=model.n).astype(np.int8) - 1
@@ -71,7 +71,7 @@ def test_delta_energy_matches_fresh_recompute():
 
 # vectorized delta_energy_all must agree element-wise with the per-site call
 def test_delta_energy_all_matches_loop():
-    rng = np.random.default_rng(13)
+    rng = np.random.default_rng()
     for model in _sample_models():
         H = DiscreteHamiltonian(model)
         s = 2 * rng.integers(0, 2, size=model.n).astype(np.int8) - 1

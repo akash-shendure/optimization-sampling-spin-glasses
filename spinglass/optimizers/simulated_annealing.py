@@ -7,12 +7,11 @@ from ..utils.spin import update_local_fields_fast
 
 # beta_schedule is callable(step, n_steps) or a 1d array indexed by step
 class SimulatedAnnealing:
-    def __init__(self, hamiltonian, beta_schedule, seed=None):
+    def __init__(self, hamiltonian, beta_schedule):
         self.hamiltonian = hamiltonian
         self.model = hamiltonian.model
         self.beta_schedule = beta_schedule
-        self.seed = seed
-        self.rng = make_rng(seed)
+        self.rng = make_rng()
 
     # resolve beta(step); clamps past end of an array schedule to its last value
     def _beta(self, step, n_steps):
@@ -88,7 +87,6 @@ class SimulatedAnnealing:
             "hit_target": hit_step is not None,
             "hit_step": hit_step,
             "hit_time_sec": hit_time,
-            "seed": self.seed,
         }
         artifacts = {"final_state": s, "best_state": best_state}
         if store_states:
