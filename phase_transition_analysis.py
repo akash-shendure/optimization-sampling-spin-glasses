@@ -46,7 +46,7 @@ MODELS = {
         extra_kwargs={},
         betas=BETAS_ISING,
         model_name="2D Ising Ferromagnet",
-        single_params=r"$L=12$",
+        single_params=r"$n=144$",
     ),
     "ea2d": dict(
         model_class=EdwardsAnderson2D,
@@ -56,7 +56,7 @@ MODELS = {
         extra_kwargs={"disorder": ["pm1"]},  # why: bimodal +/-1 couplings match EA convention
         betas=BETAS_EA,
         model_name="2D Edwards-Anderson",
-        single_params=r"$L=10$",
+        single_params=r"$n=100$",
     ),
     "sparse": dict(
         model_class=SparseRandomGlass,
@@ -176,7 +176,7 @@ def _dress_six_panels(axes):
     axes[0, 1].legend(fontsize=8)
 
     axes[0, 2].set_xlabel(r"$\beta$")
-    axes[0, 2].set_ylabel("ESS (energy)")
+    axes[0, 2].set_ylabel("ESS")
     axes[0, 2].set_title("(c) Effective sample size")
     axes[0, 2].set_yscale("log")  # why: ESS spans orders of magnitude
     axes[0, 2].legend(fontsize=8)
@@ -269,7 +269,6 @@ def plot_diagnostics(name, disc, relax, cfg):
 # size-scaling figure: discrete sampler across five sizes
 def plot_scaling(name, scaling_data, cfg):
     sizes = cfg["sizes"]
-    sk = cfg["size_key"]
     colors = _size_colors(len(sizes))
 
     all_stats = []
@@ -285,7 +284,7 @@ def plot_scaling(name, scaling_data, cfg):
         fig.suptitle(_make_title(cfg, scaling=True), fontsize=14)
         for idx, (sz, n_sp, stats, ov) in enumerate(all_stats):
             _plot_six(axes, stats, ov, n_sp, colors[idx], "o",
-                      f"${sk}={sz}$", show_eb=eb)
+                      f"$n={n_sp}$", show_eb=eb)
         _dress_six_panels(axes)
         suffix = "_eb" if eb else ""
         path = FIG_DIR / f"scaling_{name}{suffix}.png"
