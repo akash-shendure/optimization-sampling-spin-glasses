@@ -30,7 +30,7 @@ N_BETAS = 40
 
 # uniform beta grid covering disordered -> ordered regimes of 2d ising
 BETAS = np.round(np.linspace(0.05, 1.00, N_BETAS), 4).tolist()
-SIZES = [6, 8, 10, 12, 16]
+SIZES = [6, 8, 10, 12, 14]
 MODEL_NAME = "2D Ising Ferromagnet"
 
 # aggregate per-(beta, disorder) rows into mean/std across disorders for each beta
