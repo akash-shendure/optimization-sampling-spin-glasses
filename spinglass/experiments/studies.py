@@ -14,6 +14,20 @@ from .runner import run_grid
 def linear_beta_schedule(beta_hot, beta_cold, n_steps):
     return np.linspace(float(beta_hot), float(beta_cold), int(n_steps))
 
+# geometric beta ramp — spends more steps near the hot end
+def geometric_beta_schedule(beta_hot, beta_cold, n_steps):
+    return np.geomspace(float(beta_hot), float(beta_cold), int(n_steps))
+
+# geometric in temperature T, returned as beta=1/T (preferred for SA)
+def geometric_temperature_schedule(T_hot, T_cold, n_steps):
+    T = np.geomspace(float(T_hot), float(T_cold), int(n_steps))
+    return 1.0 / T
+
+# linear in T, returned as beta=1/T — gives a 1/(a+bt) shape in beta
+def linear_temperature_schedule(T_hot, T_cold, n_steps):
+    T = np.linspace(float(T_hot), float(T_cold), int(n_steps))
+    return 1.0 / T
+
 # attach a fake "_disorder_id" axis so the grid runner replicates the model
 def _inject_replicates(model_kwargs, n_disorders):
     if n_disorders is None or int(n_disorders) <= 1:
