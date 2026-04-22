@@ -30,6 +30,24 @@ def linear_beta_schedule(beta_hot, beta_cold, n_steps):
     return np.linspace(float(beta_hot), float(beta_cold), int(n_steps))
 
 
+def geometric_beta_schedule(beta_hot, beta_cold, n_steps):
+    """geometric ramp in beta (equivalently, geometric decay in T)
+    from beta_hot to beta_cold, length n_steps."""
+    return np.geomspace(float(beta_hot), float(beta_cold), int(n_steps))
+
+
+def geometric_temperature_schedule(T_hot, T_cold, n_steps):
+    """geometric decay in temperature from T_hot to T_cold; returns betas."""
+    T = np.geomspace(float(T_hot), float(T_cold), int(n_steps))
+    return 1.0 / T
+
+
+def linear_temperature_schedule(T_hot, T_cold, n_steps):
+    """linear decay in temperature from T_hot to T_cold; returns betas."""
+    T = np.linspace(float(T_hot), float(T_cold), int(n_steps))
+    return 1.0 / T
+
+
 def _inject_replicates(model_kwargs, n_disorders):
     """expand a model_kwargs grid so every (model, beta) cell fans out over
     n_disorders independent realizations. the dummy `_disorder_id` key drives
