@@ -7,9 +7,11 @@ class SherringtonKirkpatrick(SpinModel):
     name = "SherringtonKirkpatrick"
     topology = "complete_graph"
 
-    def __init__(self, n, scale=None):
+    # scale=None defers to builder default; disorder picks 'gaussian' or 'pm1'
+    def __init__(self, n, scale=None, disorder="gaussian"):
         self.scale = scale
-        J = build_sk_couplings(n, scale=scale)
+        self.disorder = disorder
+        J = build_sk_couplings(n, scale=scale, disorder=disorder)
         super().__init__(n=n, J=J)
 
     # params for logging / experiment manifests
@@ -19,4 +21,5 @@ class SherringtonKirkpatrick(SpinModel):
             "topology": self.topology,
             "n": self.n,
             "scale": self.scale,
+            "disorder": self.disorder,
         }
