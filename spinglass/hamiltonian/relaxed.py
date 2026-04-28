@@ -4,11 +4,17 @@ import numpy as np
 
 # wraps a discrete model and exposes a smooth energy/grad on x in R^n
 class RelaxedHamiltonian:
-    def __init__(self, model, alpha=1.0, lam=0.0):
+    # alpha controls tanh sharpness; lam penalizes non-binary t
+    # reg picks the form of the penalty ('linear' or 'quartic')
+    # alpha=2.0 selected by sweep_alpha_ising as best default for mixing
+    def __init__(self, model, alpha=2.0, lam=0.0, reg="linear"):
         self.model = model
         self.J = model.J
         self.alpha = float(alpha)
         self.lam = float(lam)
+        if reg not in ("linear", "quartic"):
+            raise ValueError(f"unknown reg type: {reg}")
+        self.reg = reg
 
     # t = tanh(alpha x); 1 - t^2 = sech^2(alpha x) is reused below
     def _t(self, x):
@@ -19,7 +25,11 @@ class RelaxedHamiltonian:
         t = self._t(x)
         Jt = self.J @ t
         interact = -0.5 * float(t @ Jt)  # J symmetric with zero diag
-        penalty = self.lam * float(np.sum(1.0 - t * t))
+        sech2 = 1.0 - t * t
+        if self.reg == "linear":
+            penalty = self.lam * float(np.sum(sech2))
+        else:  # quartic
+            penalty = self.lam * float(np.sum(sech2 * sech2))
         return interact + penalty
 
     # grad of -0.5 t^T J t     = -alpha (1-t^2) (J t)
@@ -29,7 +39,10 @@ class RelaxedHamiltonian:
         t = self._t(x)
         Jt = np.asarray(self.J @ t).ravel()
         sech2 = 1.0 - t * t
-        return -self.alpha * sech2 * (Jt + 2.0 * self.lam * t)
+        if self.reg == "linear":
+            return -self.alpha * sech2 * (Jt + 2.0 * self.lam * t)
+        # quartic
+        return -self.alpha * sech2 * (Jt + 4.0 * self.lam * sech2 * t)
 
     # combined call — samplers usually want both, this avoids two tanh evals
     def energy_and_grad(self, x):
@@ -37,8 +50,12 @@ class RelaxedHamiltonian:
         Jt = np.asarray(self.J @ t).ravel()
         sech2 = 1.0 - t * t
         interact = -0.5 * float(t @ Jt)
-        penalty = self.lam * float(np.sum(sech2))
-        g = -self.alpha * sech2 * (Jt + 2.0 * self.lam * t)
+        if self.reg == "linear":
+            penalty = self.lam * float(np.sum(sech2))
+            g = -self.alpha * sech2 * (Jt + 2.0 * self.lam * t)
+        else:  # quartic
+            penalty = self.lam * float(np.sum(sech2 * sech2))
+            g = -self.alpha * sech2 * (Jt + 4.0 * self.lam * sech2 * t)
         return interact + penalty, g
 
     # round x back to s in {-1, +1}; map exact zeros to +1 as a tiebreak

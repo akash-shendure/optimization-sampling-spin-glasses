@@ -15,8 +15,9 @@ def run_single(
     algorithm_class,
     algorithm_kwargs,
     run_kwargs,
-    alpha=1.0,
+    alpha=2.0,
     lam=0.0,
+    reg="linear",
     keep_trace=True,
     keep_artifacts=False,
     experiment_name=None,
@@ -33,7 +34,7 @@ def run_single(
     model_kwargs.pop("_disorder_id", None)
 
     model = build_model(model_class, **model_kwargs)
-    hamiltonian = build_hamiltonian(model, space=space, alpha=alpha, lam=lam)
+    hamiltonian = build_hamiltonian(model, space=space, alpha=alpha, lam=lam, reg=reg)
     algorithm = build_algorithm(algorithm_class, hamiltonian, **algorithm_kwargs)
 
     # relaxed runs should project back to ±1 unless caller explicitly opts out
@@ -58,6 +59,7 @@ def run_single(
         # alpha/lam/reg only meaningful in relaxed space — None elsewhere
         "alpha": float(alpha) if space == "relaxed" else None,
         "lam": float(lam) if space == "relaxed" else None,
+        "reg": str(reg) if space == "relaxed" else None,
     }
     # prefix model/algorithm/run kwargs so columns don't clash
     meta.update(_flatten_prefixed("model", model.describe()))
@@ -86,8 +88,9 @@ def run_grid(
     algorithm_class,
     algorithm_grid,
     run_kwargs,
-    alpha=1.0,
+    alpha=2.0,
     lam=0.0,
+    reg="linear",
     n_restarts=1,
     n_chains=1,
     keep_trace=False,
@@ -116,6 +119,7 @@ def run_grid(
                         run_kwargs=run_kwargs,
                         alpha=alpha,
                         lam=lam,
+                        reg=reg,
                         keep_trace=keep_trace,
                         keep_artifacts=keep_artifacts,
                         experiment_name=experiment_name,
@@ -139,6 +143,7 @@ def run_grid(
                         run_kwargs=run_kwargs,
                         alpha=alpha,
                         lam=lam,
+                        reg=reg,
                         keep_trace=keep_trace,
                         keep_artifacts=keep_artifacts,
                         experiment_name=experiment_name,
