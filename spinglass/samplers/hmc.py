@@ -67,6 +67,7 @@ class HMCSampler:
             if project and discrete_hamiltonian is not None:
                 projected_energy = discrete_hamiltonian.energy(self.hamiltonian.project(x))
             if step == 0 or step % trace_every == 0:
+                s_proj = self.hamiltonian.project(x)
                 append_trace(
                     trace,
                     step=step,
@@ -76,6 +77,7 @@ class HMCSampler:
                     grad_norm=float(np.linalg.norm(grad_U) / max(self.beta, 1e-12)),
                     projected_energy=projected_energy,
                     acceptance_rate=accept_count / max(1, step),
+                    magnetization=float(np.mean(s_proj)),
                 )
             if step >= burn_in and (step - burn_in) % thin == 0 and store_samples:
                 kept.append(x.copy())
