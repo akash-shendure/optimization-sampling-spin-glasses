@@ -4,8 +4,8 @@ Statistics 221 project on whether optimization and sampling algorithms exhibit a
 
 - `IsingFerromagnet2D` — clean lattice baseline with classical ordering
 - `EdwardsAnderson2D` — frustrated 2D lattice glass
-- `SparseRandomGlass` — sparse Erdos-Renyi interaction graph
-- `SherringtonKirkpatrick` — dense mean-field SK
+- `SparseRandomGlass` — sparse Erdos-Renyi interaction graph (Gaussian or `±1` couplings)
+- `SherringtonKirkpatrick` — dense mean-field SK (Gaussian or `±1` couplings)
 
 The central empirical object is a difficulty curve (best energy, sampling mixing error) against inverse temperature `beta`, swept across model families and system sizes.
 
@@ -51,6 +51,16 @@ python -m spinglass canonical --preset sk
 
 Each preset sweeps `beta`, averages over independent disorder realizations, and writes a timestamped run directory with one JSON per panel (`discrete_sampling`, `discrete_optimization`, `relaxed_sampling`, `relaxed_optimization`) plus per-condition overlap summaries. For one-off sweeps use `python -m spinglass beta-sweep --task sampling --model ea2d --L 8 --betas 0.3,0.8,1.5`.
 
+Several standalone driver scripts at the repo root build the figures consumed by the report:
+
+```bash
+python sweep_alpha_ising.py        # alpha sweep for relaxed samplers on Ising L=14
+python sweep_reg_ising.py          # linear vs quartic regularization sweep
+python sweep_pm1_random.py         # ±1-coupling rerun on sparse + SK
+python plot_alpha_selection.py     # focused 3-alpha selection plot
+python final_run_random_graphs.py  # final smooth panels for sparse + SK with all 4 samplers
+```
+
 ## Implemented methods
 
 **Discrete** — `GreedySpinDescent`, `SimulatedAnnealing`, `ParallelTemperingOptimizer`, `MetropolisSampler`, `GibbsSampler`, `ParallelTemperingSampler`.
@@ -85,7 +95,7 @@ spinglass/
   plotting/      style, traceplots, diagnostics, difficulty, overlap
   utils/         rng, records, spin (ColumnCache + incremental updates)
   cli.py         `python -m spinglass ...` entrypoint
-tests/           51 unit tests + zero-dependency runner
+tests/           50 unit tests + zero-dependency runner
 scripts/         thin drivers for the canonical study
 ```
 
@@ -98,12 +108,13 @@ python -m tests.run_all     # zero-dep runner — always works
 pytest tests/               # if pytest is installed
 ```
 
-51 tests cover energy vs brute force, incremental local-field updates, analytic gradient vs finite differences, PT swap bookkeeping, ESS / R-hat / tau_int on iid + AR(1) chains, Budget resolution, disorder fan-out, ColumnCache correctness plus speedup, and the preset registry.
+50 tests cover energy vs brute force, incremental local-field updates, analytic gradient vs finite differences (both `reg='linear'` and `reg='quartic'`), PT swap bookkeeping, ESS / R-hat / tau_int on iid + AR(1) chains, Budget resolution, disorder fan-out, ColumnCache correctness plus speedup, and the preset registry.
 
 ## Core conventions
 
 - `H(s) = -0.5 * s^T J s`, `J` symmetric with zero diagonal, sparse CSR or dense ndarray (use `J @ v` for both).
 - Discrete states are `int8` in {-1, +1}; cast to float64 before matvecs.
-- Relaxed surrogate is `t = tanh(alpha x)` with optional `lam` penalty; `RelaxedHamiltonian.project(x)` maps back to discrete via `sign(.)`.
+- Relaxed surrogate is `t = tanh(alpha x)` with optional `lam * R(t)` penalty; `R` is selectable via `reg='linear'` (default) or `reg='quartic'`. `RelaxedHamiltonian.project(x)` maps back to discrete via `sign(.)`. Default `alpha=2.0` (selected by the Ising sweep).
 - Samplers maintain `h = J @ s` incrementally through the column cache; don't recompute it in a hot loop.
+- All samplers, discrete and relaxed, record `magnetization` in their trace (relaxed samplers use `sign(x)` for the projection).
 - Preserve the `summary` / `trace` / `artifacts` return shape when adding new algorithms so the experiment and plotting layers work unchanged.
